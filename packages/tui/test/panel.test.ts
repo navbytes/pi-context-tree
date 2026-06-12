@@ -48,6 +48,7 @@ describe("ContextPanel rendering", () => {
 		expect(text).toMatch(/\d+(\.\d+)?% (low|healthy|filling|red)/);
 		expect(text).toContain("storage-layer");
 		expect(text).toContain("◀ leaf");
+		expect(text).toContain("← you are here");
 		expect(text).toContain("b branch");
 		expect(text).toContain("[+]"); // squashed fork folded
 	});

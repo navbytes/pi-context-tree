@@ -116,7 +116,8 @@ export class ContextPanel {
 			case "fork": {
 				const color = t.presentation[row.presentation ?? "active"];
 				const fold = row.foldable ? (row.folded ? " [+]" : " [-]") : "";
-				left = `${indent}${color("⎇")} ${color(row.forkName ?? "")} ${t.dim(row.text.replace(`${row.forkName} · `, "· "))}${t.dim(fold)}`;
+				const here = row.current ? t.leaf(" ← you are here") : "";
+				left = `${indent}${color("⎇")} ${color(row.forkName ?? "")} ${t.dim(row.text.replace(`${row.forkName} · `, "· "))}${here}${t.dim(fold)}`;
 				break;
 			}
 			case "crop": {

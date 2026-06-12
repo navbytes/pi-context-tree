@@ -173,6 +173,7 @@ export class PanelVm {
 	}
 
 	private treeRows(): PanelRow[] {
+		const currentFork = this.leafId ? nearestOpenFork(this.tree, this.leafId, this.forks) : undefined;
 		const rows: PanelRow[] = [];
 		const visit = (e: SessionEntry, depth: number): void => {
 			const fork = this.forkById.get(e.id);
@@ -189,6 +190,7 @@ export class PanelVm {
 					foldable: true,
 					folded,
 					onPath: fork.onCurrentPath,
+					current: fork.entryId === currentFork?.entryId,
 				});
 				for (const child of this.tree.children(e.id)) {
 					if (folded && !this.tree.isAncestorOrSelf(child.id, this.leafId)) continue;
@@ -385,7 +387,12 @@ export class PanelVm {
 	private inspectRows(): PanelRow[] {
 		const e = this.inspectId ? this.tree.get(this.inspectId) : undefined;
 		if (!e) return [{ kind: "inspect-line", depth: 0, glyph: " ", text: "(nothing selected)", dim: true }];
-		const meta = `id ${e.id} · type ${e.type} · ~${estimateEntryTokens(e)} tokens · parent ${e.parentId ?? "—"}`;
+		const tokens = estimateEntryTokens(e);
+		const tool =
+			isMessageEntry(e) && e.message.role === "toolResult"
+				? ` · tool ${(e.message as { toolName: string }).toolName}`
+				: "";
+		const meta = `id ${e.id} · type ${e.type}${tool} · ~${fmtTokens(tokens)} tokens (${(tokens * 4).toLocaleString("en-US")} chars) · parent ${e.parentId ?? "—"}`;
 		const body = serializeEntry(e) ?? "(no content)";
 		const lines = body.split("\n").slice(0, 400);
 		return [

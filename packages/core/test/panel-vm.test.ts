@@ -59,7 +59,7 @@ describe("PanelVm tree view", () => {
 		expect(rows.some((r) => r.text.includes("noisy branch work"))).toBe(false);
 		// active fork's descendants visible, leaf marked
 		expect(rows.some((r) => r.text.includes("tests flake"))).toBe(true);
-		expect(rows.find((r) => r.current)?.text).toContain("root cause");
+		expect(rows.find((r) => r.kind === "entry" && r.current)?.text).toContain("root cause");
 	});
 
 	it("unfolds on enter and refolds, keeping selection in range", () => {
@@ -82,6 +82,14 @@ describe("PanelVm tree view", () => {
 		expect(p.handleKey("b").action).toEqual({ type: "branch", entryId: ids.plan });
 		expect(p.handleKey("m").action).toEqual({ type: "merge" });
 		expect(p.handleKey("q").action).toEqual({ type: "close" });
+	});
+
+	it("marks only the nearest open fork with current (← you are here)", () => {
+		const { vm: p } = vm();
+		const forkRows = p.rows().filter((r) => r.kind === "fork");
+		expect(forkRows.find((r) => r.forkName === "fix-flaky-test")?.current).toBe(true);
+		expect(forkRows.find((r) => r.forkName === "storage-layer")?.current).toBeFalsy();
+		expect(forkRows.find((r) => r.forkName === "perf-spike")?.current).toBeFalsy();
 	});
 
 	it("flags huge entries with warn", () => {
@@ -165,6 +173,9 @@ describe("PanelVm other views", () => {
 		p.handleKey("i");
 		expect(p.view).toBe("inspect");
 		expect(p.rows().some((r) => r.text.includes("chrome.snapshot"))).toBe(true);
+		const meta = p.rows()[0]?.text ?? "";
+		expect(meta).toContain("tool chrome.snapshot");
+		expect(meta).toMatch(/~15k tokens \(60,000 chars\)/);
 	});
 });
 
