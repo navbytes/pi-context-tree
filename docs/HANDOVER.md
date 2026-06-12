@@ -1,7 +1,7 @@
 # pi-context-tree — Handover (v1 + integration layer complete → P0 human acceptance)
 
 **Date:** 2026-06-12 · **Repo:** https://github.com/navbytes/pi-context-tree (private) · **Owner:** Naveen
-**State:** All v1 milestones (M1–M8) plus the previously-missing test layer: **RPC golden-file integration tests** (squash / discard / tournament / crop against the real pinned pi + mock OpenAI endpoint) and **CI** (lint+types+unit, pinned-pi integration, non-blocking `pi@latest` drift lane). 118 tests green. The golden harness found and fixed a real data-loss bug (see §4a below). **Not yet done: human acceptance of the interactive flows (Scenario A–F) — that is the next session's first item.**
+**State:** All v1 milestones (M1–M8) + RPC golden tests + CI + a **mockup-consistency pass** (decisions cards, section headers with live crop reclaim, share-scaled consumer bars, you-are-here marker) + a **real-TUI PTY walk** (expect(1) drives actual pi: /panel overlay opens, all mockup screens paint, no crash — automates most of the old P0 overlay smoke). 128 tests green. Two real bugs found & fixed by the harnesses: the deliverAs:"nextTurn" data-loss bug (§4a) and testkit sessions crashing pi's TUI footer (assistant messages must carry usage). **Still needs Naveen: the subjective half of P0 — overlay sizing/feel and gauge behavior (§4 items b/d) — plus a quick Scenario A drive with a real model.**
 
 ---
 
@@ -19,9 +19,9 @@ Pinned upstream: `@earendil-works/pi-coding-agent@0.79.1`, `@earendil-works/pi-t
 
 ## 2. What was built (per package; git history mirrors this)
 
-- **`packages/core`** (72 tests, zero deps): streaming fault-tolerant JSONL parser; `SessionTree` + `contextSlice` reproducing pi's `buildSessionContext`; ctree fork/close status derivation; chars/4 estimator + 5/15/40 bands; consumers; §6 decision-record template; crop planner (latest-per-tool protection, `--auto` rules, sha8 stubs, reconstruction block); forest scanner; `PanelVm` (pure reducers); exported `testkit` (`@pi-context-tree/core/testkit`).
-- **`packages/tui`** (7 tests): `ContextPanel` + band-ticked gauge on pi-tui; xterm-headless `VirtualTerminal` harness.
-- **`packages/extension`** (35 tests): `/branch` (label mirror, model tiering), `/merge` (squash via pi-ai draft + **mandatory `ui.editor` gate**; `--no-llm`; discard; tournament = ONE combined node + epitaphs + per-sibling closes; always `navigateTree(…,{summarize:false})`; decision **before** close markers; trunk-model restore), `/crop` (`--auto --apply --dry-run --min-tokens --older-than --keep`; **`--apply` = headless apply of the rule-selected plan**, works without the TUI panel), `/panel` + Ctrl+T, `/decisions`, ambient footer/title.
+- **`packages/core`** (79 tests, zero deps): streaming fault-tolerant JSONL parser; `SessionTree` + `contextSlice` reproducing pi's `buildSessionContext`; ctree fork/close status derivation; chars/4 estimator + 5/15/40 bands; consumers; §6 decision-record template; crop planner (latest-per-tool protection, `--auto` rules, sha8 stubs, reconstruction block); forest scanner; `PanelVm` (pure reducers); exported `testkit` (`@pi-context-tree/core/testkit`).
+- **`packages/tui`** (9 tests): `ContextPanel` + band-ticked gauge on pi-tui; xterm-headless `VirtualTerminal` harness.
+- **`packages/extension`** (36 tests): `/branch` (label mirror, model tiering), `/merge` (squash via pi-ai draft + **mandatory `ui.editor` gate**; `--no-llm`; discard; tournament = ONE combined node + epitaphs + per-sibling closes; always `navigateTree(…,{summarize:false})`; decision **before** close markers; trunk-model restore), `/crop` (`--auto --apply --dry-run --min-tokens --older-than --keep`; **`--apply` = headless apply of the rule-selected plan**, works without the TUI panel), `/panel` + Ctrl+T, `/decisions`, ambient footer/title.
   - **Test layers:** fake-pi unit tests · real-pi RPC smoke · **RPC goldens** (`test/golden/`): mock OpenAI SSE endpoint (`mock-openai.ts`), sandboxed pi driver (`rpc-driver.ts` — `PI_CODING_AGENT_DIR` isolation + `--session-dir`, answers `extension_ui` dialogs), `normalizeSession` (ids→e00N everywhere incl. content strings; timestamps/dates/cwd/responseId → placeholders), committed goldens in `test/golden/__goldens__/`.
 - **`packages/pitree`** (4 tests): forest CLI + read-only panel; zero-write asserted.
 - **CI:** `.github/workflows/ci.yml` — see README.
@@ -37,7 +37,7 @@ TDD (tests before implementation, red→green per module) · **commit after ever
 **P0 — manual acceptance (needs Naveen's terminal, ~15 min, spec §4 Scenarios A–F):**
 1. Scenario A end-to-end in a real project: `/branch test-drive` → 2–3 turns → `/merge` → squash → edit record → save. Watch for:
    (a) ~~does the ◆ record appear immediately after squash~~ — **RESOLVED**: `deliverAs:"nextTurn"` never persisted it (in-memory only, lost on quit); fixed to plain `{triggerTurn:false}` and pinned by the squash golden (architecture §11.1).
-   (b) **overlay full-screen sizing/feel** (`panel-cmd.ts:openPanel` `overlayOptions` — never human-reviewed; "Overlay Mode" is flagged Experimental upstream).
+   (b) **overlay sizing/feel** — the PTY walk (test/golden/tui-pty.test.ts) proves it opens, renders every view and closes cleanly at 45×120; what remains is the subjective judgment (does 95% width feel right, resize behavior).
    (c) **no pi summarize-on-leave prompt** during merge in the TUI (verified in RPC mode by the goldens; TUI prompt path still unseen — architecture §11.4).
    (d) gauge correctness right after merge/crop (§11.5 — does `getContextUsage()` count the fresh `custom_message` immediately).
 2. Scenario D/E: `/crop` on a session with a fat tool result (try both the panel flow and `/crop --auto --apply`); `/panel` keybindings sweep against the mockup.
