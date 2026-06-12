@@ -13,6 +13,7 @@ import {
 	autoSelect,
 	cropCandidates,
 	fmtTokens,
+	planCrop,
 	renderReconstruction,
 } from "@pi-context-tree/core";
 import { type CmdCtxLike, type PiLike, leafIdOf } from "./adapter.ts";
@@ -23,6 +24,7 @@ import { deriveState } from "./state.ts";
 interface CropFlags {
 	auto: boolean;
 	dryRun: boolean;
+	apply: boolean;
 	minTokens?: number;
 	olderThan?: number;
 	keep: string[];
@@ -30,11 +32,12 @@ interface CropFlags {
 
 export function parseCropFlags(args: string): CropFlags {
 	const tokens = args.trim().split(/\s+/).filter(Boolean);
-	const flags: CropFlags = { auto: false, dryRun: false, keep: [] };
+	const flags: CropFlags = { auto: false, dryRun: false, apply: false, keep: [] };
 	for (let i = 0; i < tokens.length; i++) {
 		const t = tokens[i];
 		if (t === "--auto") flags.auto = true;
 		else if (t === "--dry-run") flags.dryRun = true;
+		else if (t === "--apply") flags.apply = true;
 		else if (t === "--min-tokens") flags.minTokens = Number(tokens[++i]);
 		else if (t === "--older-than") flags.olderThan = Number(tokens[++i]);
 		else if (t === "--keep") {
@@ -43,6 +46,14 @@ export function parseCropFlags(args: string): CropFlags {
 		}
 	}
 	return flags;
+}
+
+function notifyDryRun(ctx: CmdCtxLike, plan: CropPlan): void {
+	const lines = plan.stubs.map((s) => `${s.tool}${s.arg ? ` ${s.arg}` : ""} ~${fmtTokens(s.estTokens)}`);
+	ctx.ui.notify(
+		`(dry-run) would crop ${plan.stubs.length}: ${lines.join(" · ")} — reclaim ~${fmtTokens(plan.reclaimTokens)}; nothing written`,
+		"info",
+	);
 }
 
 /** Apply a reviewed plan. Re-validates the leaf (TRD §6) before writing. */
@@ -99,9 +110,30 @@ export async function cropHandler(pi: PiLike, ctx: CmdCtxLike, args: string): Pr
 		return;
 	}
 
+	if (flags.apply && !flags.auto) {
+		ctx.ui.notify("--apply needs --auto rules (interactive review applies from the panel)", "error");
+		return;
+	}
+
 	const premark = flags.auto
 		? autoSelect(candidates, { minTokens: flags.minTokens, olderThanTurns: flags.olderThan, keep: flags.keep })
 		: [];
+
+	// headless: --auto --apply skips the panel entirely (scriptable + works without a TUI, e.g. RPC mode)
+	if (flags.auto && flags.apply) {
+		if (premark.length === 0) {
+			ctx.ui.notify("--auto matched nothing (protected/latest results are skipped) — nothing to crop", "info");
+			return;
+		}
+		const plan = planCrop(state.tree, state.leafId, premark);
+		if (flags.dryRun) {
+			notifyDryRun(ctx, plan);
+			return;
+		}
+		await applyCropPlan(pi, ctx, plan);
+		return;
+	}
+
 	if (flags.auto && premark.length === 0) {
 		ctx.ui.notify("--auto matched nothing (protected/latest results are skipped) — opening review anyway", "info");
 	}
@@ -110,11 +142,7 @@ export async function cropHandler(pi: PiLike, ctx: CmdCtxLike, args: string): Pr
 	if (!action || action.type !== "crop-apply") return;
 
 	if (action.dryRun) {
-		const lines = action.plan.stubs.map((s) => `${s.tool}${s.arg ? ` ${s.arg}` : ""} ~${fmtTokens(s.estTokens)}`);
-		ctx.ui.notify(
-			`(dry-run) would crop ${action.plan.stubs.length}: ${lines.join(" · ")} — reclaim ~${fmtTokens(action.plan.reclaimTokens)}; nothing written`,
-			"info",
-		);
+		notifyDryRun(ctx, action.plan);
 		return;
 	}
 	await applyCropPlan(pi, ctx, action.plan);
@@ -122,10 +150,10 @@ export async function cropHandler(pi: PiLike, ctx: CmdCtxLike, args: string): Pr
 
 export function registerCrop(pi: PiLike): void {
 	pi.registerCommand("crop", {
-		description: "pi-context-tree: surgically stub out huge tool/MCP results (interactive; --auto --dry-run)",
+		description: "pi-context-tree: surgically stub out huge tool/MCP results (interactive; --auto --apply --dry-run)",
 		handler: (args, ctx) => cropHandler(pi, ctx, args),
 		getArgumentCompletions: (prefix) => {
-			const flags = ["--auto", "--dry-run", "--min-tokens", "--older-than", "--keep"];
+			const flags = ["--auto", "--apply", "--dry-run", "--min-tokens", "--older-than", "--keep"];
 			const last = prefix.split(/\s+/).pop() ?? "";
 			const hits = flags.filter((f) => f.startsWith(last));
 			return hits.length ? hits.map((value) => ({ value })) : null;

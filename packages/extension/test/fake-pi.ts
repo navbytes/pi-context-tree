@@ -94,6 +94,9 @@ export class FakeUi implements UiLike {
 	notes(): string[] {
 		return this.notifications.map((n) => n.msg);
 	}
+	notesOf(type: string): string[] {
+		return this.notifications.filter((n) => n.type === type).map((n) => n.msg);
+	}
 }
 
 export interface FakeWorld {

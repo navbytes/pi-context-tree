@@ -1,6 +1,6 @@
 import { SessionTree, cropCandidates, planCrop } from "@pi-context-tree/core";
 import { describe, expect, it } from "vitest";
-import { applyCropPlan, parseCropFlags } from "../src/crop-cmd.ts";
+import { applyCropPlan, cropHandler, parseCropFlags } from "../src/crop-cmd.ts";
 import { type FakeWorld, entriesByType, makeFake } from "./fake-pi.ts";
 
 function seedBigSession(w: FakeWorld): { snap1: string; snap2: string } {
@@ -16,7 +16,72 @@ function seedBigSession(w: FakeWorld): { snap1: string; snap2: string } {
 describe("parseCropFlags", () => {
 	it("parses auto/dry-run/thresholds/keep globs", () => {
 		const f = parseCropFlags("--auto --dry-run --min-tokens 5000 --older-than 3 --keep chrome.* --keep run_tests");
-		expect(f).toEqual({ auto: true, dryRun: true, minTokens: 5000, olderThan: 3, keep: ["chrome.*", "run_tests"] });
+		expect(f).toEqual({
+			auto: true,
+			dryRun: true,
+			apply: false,
+			minTokens: 5000,
+			olderThan: 3,
+			keep: ["chrome.*", "run_tests"],
+		});
+	});
+
+	it("parses --apply", () => {
+		expect(parseCropFlags("--auto --apply").apply).toBe(true);
+	});
+});
+
+describe("/crop --auto --apply (headless, no panel)", () => {
+	it("applies the auto-selected plan without ui.custom; latest-per-tool stays protected", async () => {
+		const w = makeFake();
+		const { snap1 } = seedBigSession(w);
+		const entriesBefore = w.session.entries.length;
+
+		await cropHandler(w.pi, w.ctx, "--auto --min-tokens 1000 --older-than 1 --apply");
+
+		const tails = entriesByType(w.session, "custom_message", "ctree/crop-tail");
+		expect(tails).toHaveLength(1);
+		const marker = entriesByType(w.session, "custom", "ctree/crop");
+		expect(marker).toHaveLength(1);
+		const stubbed = (marker[0] as { data?: { stubbed?: { entryId: string }[] } }).data?.stubbed ?? [];
+		expect(stubbed.map((s) => s.entryId)).toEqual([snap1]); // snap2 is latest chrome.snapshot → protected
+		// append-only: originals still present
+		expect(w.session.entries.length).toBe(entriesBefore + 2);
+		expect(w.session.entries.find((e) => e.id === snap1)).toBeDefined();
+		expect(w.ui.notes().some((n) => n.includes("✂ cropped 1"))).toBe(true);
+	});
+
+	it("--dry-run wins over --apply: reports, writes nothing", async () => {
+		const w = makeFake();
+		seedBigSession(w);
+		const entriesBefore = w.session.entries.length;
+
+		await cropHandler(w.pi, w.ctx, "--auto --min-tokens 1000 --older-than 1 --apply --dry-run");
+
+		expect(w.session.entries.length).toBe(entriesBefore);
+		expect(w.ui.notes().some((n) => n.includes("(dry-run) would crop 1"))).toBe(true);
+	});
+
+	it("--apply without --auto is refused (interactive review applies from the panel)", async () => {
+		const w = makeFake();
+		seedBigSession(w);
+		const entriesBefore = w.session.entries.length;
+
+		await cropHandler(w.pi, w.ctx, "--apply");
+
+		expect(w.session.entries.length).toBe(entriesBefore);
+		expect(w.ui.notesOf("error").some((n) => n.includes("--apply needs --auto"))).toBe(true);
+	});
+
+	it("--auto --apply matching nothing writes nothing and says so", async () => {
+		const w = makeFake();
+		seedBigSession(w);
+		const entriesBefore = w.session.entries.length;
+
+		await cropHandler(w.pi, w.ctx, "--auto --min-tokens 999999 --apply");
+
+		expect(w.session.entries.length).toBe(entriesBefore);
+		expect(w.ui.notes().some((n) => n.includes("matched nothing"))).toBe(true);
 	});
 });
 
