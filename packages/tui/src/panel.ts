@@ -30,6 +30,7 @@ export class ContextPanel {
 	private readonly opts: ContextPanelOptions;
 	private scroll = 0;
 	private lastNotify: string | undefined;
+	private consumerMax = 0;
 
 	constructor(opts: ContextPanelOptions) {
 		this.opts = opts;
@@ -85,6 +86,7 @@ export class ContextPanel {
 		if (sect) lines.push(` ${t.dim(sect)}`);
 
 		const rows = this.vm.rows();
+		this.consumerMax = rows.reduce((m, r) => (r.kind === "consumer" ? Math.max(m, r.tokens ?? 0) : m), 0);
 		const maxBody = this.opts.maxBody ?? 26;
 		if (this.vm.sel < this.scroll) this.scroll = this.vm.sel;
 		if (this.vm.sel >= this.scroll + maxBody) this.scroll = this.vm.sel - maxBody + 1;
@@ -126,8 +128,11 @@ export class ContextPanel {
 				break;
 			}
 			case "consumer": {
-				const barLen = Math.max(1, Math.min(30, Math.round(((row.tokens ?? 0) / 1000) * 2)));
-				left = `${indent}${row.text.padEnd(40)} ${t.warn("▰".repeat(barLen))}`;
+				// mockup: bars scale to the dominant consumer; color by share of context
+				const barLen = Math.max(1, Math.round(((row.tokens ?? 0) / Math.max(1, this.consumerMax)) * 28));
+				const share = row.share ?? 0;
+				const color = share > 0.5 ? t.band.filling : share > 0.1 ? t.tokensBig : t.dim;
+				left = `${indent}${row.text.padEnd(40)} ${color("▰".repeat(barLen))}`;
 				break;
 			}
 			case "decision": {

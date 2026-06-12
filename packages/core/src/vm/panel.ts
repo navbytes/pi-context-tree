@@ -74,6 +74,8 @@ export interface PanelRow {
 	protected?: boolean;
 	armed?: boolean;
 	age?: number;
+	// consumer rows
+	share?: number;
 }
 
 export interface PanelHeader {
@@ -322,6 +324,7 @@ export class PanelVm {
 			glyph: " ",
 			text: `${r.key} · ${r.entries} ${r.entries === 1 ? "entry" : "entries"} · ${(r.share * 100).toFixed(0)}%`,
 			tokens: r.tokens,
+			share: r.share,
 		}));
 	}
 

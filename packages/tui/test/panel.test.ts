@@ -98,6 +98,18 @@ describe("ContextPanel crop flow", () => {
 	});
 });
 
+describe("ContextPanel consumers bars", () => {
+	it("scales bars relative to the biggest consumer", () => {
+		const { panel } = makePanel();
+		panel.handleInput("u");
+		const lines = panel.render(110).map(strip);
+		const bars = lines.filter((l) => l.includes("▰")).map((l) => (l.match(/▰+/) ?? [""])[0].length);
+		expect(bars.length).toBeGreaterThan(1);
+		expect(Math.max(...bars)).toBe(28); // dominant consumer fills the scale
+		expect(Math.min(...bars)).toBeLessThan(6);
+	});
+});
+
 describe("ContextPanel decisions cards", () => {
 	it("renders meta and epitaph rows under the record header", () => {
 		const b = new SessionBuilder();

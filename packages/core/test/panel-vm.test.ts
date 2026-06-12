@@ -137,12 +137,15 @@ describe("PanelVm crop view", () => {
 });
 
 describe("PanelVm other views", () => {
-	it("shows consumers sorted desc and returns to tree", () => {
+	it("shows consumers sorted desc with shares and returns to tree", () => {
 		const { vm: p } = vm();
 		p.handleKey("u");
 		expect(p.view).toBe("consumers");
 		const rows = p.rows();
 		expect(rows[0]?.text).toContain("chrome.snapshot");
+		expect(rows[0]?.share).toBeGreaterThan(0.5);
+		const shares = rows.map((r) => r.share ?? 0);
+		expect(Math.abs(shares.reduce((a, b) => a + b, 0) - 1)).toBeLessThan(0.01);
 		p.handleKey("esc");
 		expect(p.view).toBe("tree");
 	});
