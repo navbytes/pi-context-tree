@@ -114,3 +114,21 @@ describe("parseSessionFile", () => {
 		expect(fromFile.header).toEqual(fromText.header);
 	});
 });
+
+describe("testkit pi-fidelity", () => {
+	it("assistant messages carry usage — pi's TUI footer reads message.usage.input unconditionally", () => {
+		const b = new SessionBuilder();
+		b.user("q");
+		b.assistant("a");
+		b.toolUse("read_file", { path: "x" }, "y");
+		const assistants = b
+			.build()
+			.entries.filter((e) => e.type === "message" && (e as { message: { role: string } }).message.role === "assistant")
+			.map((e) => (e as { message: { usage?: { input?: number; cost?: { total?: number } } } }).message);
+		expect(assistants.length).toBeGreaterThan(1);
+		for (const m of assistants) {
+			expect(typeof m.usage?.input).toBe("number");
+			expect(typeof m.usage?.cost?.total).toBe("number");
+		}
+	});
+});

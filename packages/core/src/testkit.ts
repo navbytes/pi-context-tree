@@ -77,6 +77,9 @@ export class SessionBuilder {
 				content,
 				provider: opts.provider ?? "anthropic",
 				model: opts.model ?? "opus-4.8",
+				// pi's footer sums message.usage.input across ALL assistant entries without
+				// guards — sessions missing usage crash the real TUI (found by the PTY walk).
+				usage: zeroUsage(),
 				stopReason: opts.toolCalls?.length ? "toolUse" : "stop",
 			},
 			opts.id,
@@ -108,6 +111,7 @@ export class SessionBuilder {
 			content: [{ type: "toolCall", id: callId, name: toolName, arguments: args }],
 			provider: "anthropic",
 			model: "opus-4.8",
+			usage: zeroUsage(),
 			stopReason: "toolUse",
 		});
 		return this.toolResult(toolName, resultText, { toolCallId: callId, id: opts.id });
@@ -198,4 +202,16 @@ export class SessionBuilder {
 /** Repeated filler so fixtures hit target sizes deterministically. */
 export function filler(chars: number, seed = "0123456789abcdef"): string {
 	return seed.repeat(Math.ceil(chars / seed.length)).slice(0, chars);
+}
+
+/** pi-shaped zero usage block — present on every real assistant message. */
+function zeroUsage() {
+	return {
+		input: 0,
+		output: 0,
+		cacheRead: 0,
+		cacheWrite: 0,
+		totalTokens: 0,
+		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+	};
 }

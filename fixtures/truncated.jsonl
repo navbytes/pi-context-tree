@@ -1,4 +1,4 @@
 {"type":"session","version":3,"id":"00000000-0000-4000-8000-000000000000","timestamp":"2026-06-12T00:00:00.000Z","cwd":"/home/u/flaky-disk"}
 {"type":"message","message":{"role":"user","content":"start something"},"id":"e001","parentId":null,"timestamp":"2026-06-12T00:01:00.000Z"}
-{"type":"message","message":{"role":"assistant","content":[{"type":"text","text":"working on it"}],"provider":"anthropic","model":"opus-4.8","stopReason":"stop"},"id":"e002","parentId":"e001","timestamp":"2026-06-12T00:02:00.000Z"}
+{"type":"message","message":{"role":"assistant","content":[{"type":"text","text":"working on it"}],"provider":"anthropic","model":"opus-4.8","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop"},"id":"e002","parentId":"e001","timestamp":"2026-06-12T00:02:00.000Z"}
 {"type":"message","message":{"role":"user","content":"this entry will be cut off mid-line"},"id":"e003","parentId":"e002","timestam
