@@ -1,0 +1,12 @@
+{"type":"session","version":3,"id":"00000000-0000-4000-8000-000000000000","timestamp":"2026-06-12T00:00:00.000Z","cwd":"/home/u/tabwrangler"}
+{"type":"message","message":{"role":"user","content":"we need a storage layer"},"id":"e001","parentId":null,"timestamp":"2026-06-12T00:01:00.000Z"}
+{"type":"message","message":{"role":"assistant","content":[{"type":"text","text":"three candidate designs — trying each on a branch"}],"provider":"anthropic","model":"opus-4.8","stopReason":"stop"},"id":"e002","parentId":"e001","timestamp":"2026-06-12T00:02:00.000Z"}
+{"type":"custom","customType":"ctree/fork","data":{"v":1,"name":"storage-a","parentEntryId":"e002","trunkModel":"opus-4.8","createdAt":1781222580000,"status":"open"},"id":"e003","parentId":"e002","timestamp":"2026-06-12T00:03:00.000Z"}
+{"type":"message","message":{"role":"user","content":"try chrome.storage.sync"},"id":"e004","parentId":"e003","timestamp":"2026-06-12T00:04:00.000Z"}
+{"type":"message","message":{"role":"assistant","content":[{"type":"text","text":"sync quota is only 100KB — tight"}],"provider":"anthropic","model":"opus-4.8","stopReason":"stop"},"id":"e005","parentId":"e004","timestamp":"2026-06-12T00:05:00.000Z"}
+{"type":"custom","customType":"ctree/fork","data":{"v":1,"name":"storage-b","parentEntryId":"e002","trunkModel":"opus-4.8","createdAt":1781222760000,"status":"open"},"id":"e006","parentId":"e002","timestamp":"2026-06-12T00:06:00.000Z"}
+{"type":"message","message":{"role":"user","content":"try in-memory plus events"},"id":"e007","parentId":"e006","timestamp":"2026-06-12T00:07:00.000Z"}
+{"type":"message","message":{"role":"assistant","content":[{"type":"text","text":"breaks on MV3 event-page suspension"}],"provider":"anthropic","model":"opus-4.8","stopReason":"stop"},"id":"e008","parentId":"e007","timestamp":"2026-06-12T00:08:00.000Z"}
+{"type":"custom","customType":"ctree/fork","data":{"v":1,"name":"storage-c","parentEntryId":"e002","trunkModel":"opus-4.8","createdAt":1781222940000,"status":"open"},"id":"e009","parentId":"e002","timestamp":"2026-06-12T00:09:00.000Z"}
+{"type":"message","message":{"role":"user","content":"try chrome.storage.session"},"id":"e010","parentId":"e009","timestamp":"2026-06-12T00:10:00.000Z"}
+{"type":"message","message":{"role":"assistant","content":[{"type":"text","text":"survives service-worker restarts; this is the one"}],"provider":"anthropic","model":"opus-4.8","stopReason":"stop"},"id":"e011","parentId":"e010","timestamp":"2026-06-12T00:11:00.000Z"}

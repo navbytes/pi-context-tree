@@ -1,0 +1,4 @@
+{"type":"session","version":1,"id":"legacy-session-uuid","timestamp":"2024-01-01T00:00:00.000Z","cwd":"/home/u/old-project"}
+{"type":"message","message":{"role":"user","content":"old style question"}}
+{"type":"message","message":{"role":"assistant","content":[{"type":"text","text":"old style answer"}]}}
+{"type":"message","message":{"role":"user","content":"follow-up"}}
