@@ -26,10 +26,13 @@ const EXTENSION = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "in
 describe.skipIf(!PI)("pi --mode rpc loads the extension", () => {
 	it("registers all five commands", { timeout: 30_000 }, async () => {
 		const cwd = mkdtempSync(join(tmpdir(), "ctree-rpc-"));
+		// Isolated agent dir: without it, a globally installed pi-context-tree package would load
+		// alongside the -e copy and pi would suffix the duplicate commands (branch:1, …).
+		const agentDir = mkdtempSync(join(tmpdir(), "ctree-rpc-agent-"));
 		const child = spawn(PI as string, ["--mode", "rpc", "-e", EXTENSION], {
 			cwd,
 			stdio: ["pipe", "pipe", "pipe"],
-			env: { ...process.env, NO_COLOR: "1" },
+			env: { ...process.env, NO_COLOR: "1", PI_CODING_AGENT_DIR: agentDir },
 		});
 
 		let stdout = "";
