@@ -4,11 +4,16 @@
 	"type": "module",
 	"version": "0.0.1",
 	"description": "Git-style /branch /merge /crop workflow + context panel for pi sessions",
+	"keywords": ["pi-package"],
+	"pi": {
+		"extensions": ["./extensions"]
+	},
 	"workspaces": ["packages/*"],
 	"engines": {
 		"node": ">=22.19.0"
 	},
 	"scripts": {
+		"prepare": "npm run build",
 		"build": "npm run build -w @pi-context-tree/core && npm run build -w @pi-context-tree/tui && npm run build -w @pi-context-tree/pitree",
 		"test": "npm run build && npm run test --workspaces --if-present",
 		"check": "npm run check:types && npm run check:lint",
