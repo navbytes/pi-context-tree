@@ -35,6 +35,8 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      # expect(1) drives the real-TUI PTY walk (tui-pty.test.ts)
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq expect
       # single source of truth for the pin: the extension's devDependency
       - name: install pinned pi
         run: |
@@ -57,6 +59,7 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq expect
       - name: install latest pi
         run: |
           npm install -g "@earendil-works/pi-coding-agent@latest"
