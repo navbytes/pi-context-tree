@@ -185,6 +185,9 @@ export async function mergeHandler(pi: PiLike, ctx: CmdCtxLike, args: string, de
 		ctx.ui.notify("merge aborted — navigation cancelled, nothing written", "warning");
 		return;
 	}
+	// triggerTurn:false with NO deliverAs = pi appends the custom_message to the session right now,
+	// without starting an LLM turn. deliverAs:"nextTurn" only stages it in memory until the next user
+	// prompt — the record would land after the close markers, or be lost on quit (squash golden).
 	pi.sendMessage(
 		{
 			customType: CTREE_DECISION,
@@ -192,7 +195,7 @@ export async function mergeHandler(pi: PiLike, ctx: CmdCtxLike, args: string, de
 			display: true,
 			details: { v: 1, forkEntryId: fork.entryId, branchName: fork.data.name, siblings: rejected },
 		},
-		{ triggerTurn: false, deliverAs: "nextTurn" },
+		{ triggerTurn: false },
 	);
 	const decisionEntryId = lastEntryId(ctx) ?? undefined;
 	pi.appendEntry(CTREE_CLOSE, { v: 1, forkEntryId: fork.entryId, status: "squashed", decisionEntryId });

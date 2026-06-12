@@ -65,6 +65,8 @@ export async function applyCropPlan(pi: PiLike, ctx: CmdCtxLike, plan: CropPlan)
 		ctx.ui.notify("crop aborted — navigation cancelled, nothing written", "warning");
 		return;
 	}
+	// triggerTurn:false with NO deliverAs — same reasoning as merge.ts: the reconstruction block
+	// must be in the session before the ctree/crop marker, not staged for a hypothetical next turn.
 	pi.sendMessage(
 		{
 			customType: CTREE_CROP_TAIL,
@@ -72,7 +74,7 @@ export async function applyCropPlan(pi: PiLike, ctx: CmdCtxLike, plan: CropPlan)
 			display: true,
 			details: { v: 1, sourceLeafId: plan.sourceLeafId, stubbed: plan.stubs },
 		},
-		{ triggerTurn: false, deliverAs: "nextTurn" },
+		{ triggerTurn: false },
 	);
 	pi.appendEntry(CTREE_CROP, { v: 1, sourceLeafId: plan.sourceLeafId, stubbed: plan.stubs });
 	refreshAmbient(pi, ctx);

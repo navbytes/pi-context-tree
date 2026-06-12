@@ -1,0 +1,13 @@
+{"type":"session","version":3,"id":"<session>","timestamp":"<ts>","cwd":"<cwd>"}
+{"type":"model_change","id":"e001","parentId":null,"timestamp":"<ts>","provider":"mock","modelId":"trunk-1"}
+{"type":"thinking_level_change","id":"e002","parentId":"e001","timestamp":"<ts>","thinkingLevel":"off"}
+{"type":"message","id":"e003","parentId":"e002","timestamp":"<ts>","message":{"role":"user","content":[{"type":"text","text":"hello trunk"}],"timestamp":0}}
+{"type":"message","id":"e004","parentId":"e003","timestamp":"<ts>","message":{"role":"assistant","content":[{"type":"text","text":"trunk says hi"}],"api":"openai-completions","provider":"mock","model":"trunk-1","usage":{"input":20,"output":4,"cacheRead":0,"cacheWrite":0,"totalTokens":24,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":0,"responseId":"<resp>"}}
+{"type":"custom","customType":"ctree/fork","data":{"v":1,"name":"feat-x","parentEntryId":"e004","trunkModel":"mock/trunk-1","branchModel":"mock/branch-1","createdAt":0,"status":"open"},"id":"e005","parentId":"e004","timestamp":"<ts>"}
+{"type":"label","id":"e006","parentId":"e005","timestamp":"<ts>","targetId":"e005","label":"feat-x"}
+{"type":"model_change","id":"e007","parentId":"e006","timestamp":"<ts>","provider":"mock","modelId":"branch-1"}
+{"type":"message","id":"e008","parentId":"e007","timestamp":"<ts>","message":{"role":"user","content":[{"type":"text","text":"attempt the thing"}],"timestamp":0}}
+{"type":"message","id":"e009","parentId":"e008","timestamp":"<ts>","message":{"role":"assistant","content":[{"type":"text","text":"branch attempt done"}],"api":"openai-completions","provider":"mock","model":"branch-1","usage":{"input":30,"output":6,"cacheRead":0,"cacheWrite":0,"totalTokens":36,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":0,"responseId":"<resp>"}}
+{"type":"custom_message","customType":"ctree/decision","content":"## Decision: feat-x\n**Outcome:** the thing works.\n**Why:**\n- because the transcript said so\n- and the mock model agrees\n\n<!-- reviewed-by-human -->","display":true,"details":{"v":1,"forkEntryId":"e005","branchName":"feat-x","siblings":[]},"id":"e010","parentId":"e005","timestamp":"<ts>"}
+{"type":"custom","customType":"ctree/close","data":{"v":1,"forkEntryId":"e005","status":"squashed","decisionEntryId":"e010"},"id":"e011","parentId":"e010","timestamp":"<ts>"}
+{"type":"model_change","id":"e012","parentId":"e011","timestamp":"<ts>","provider":"mock","modelId":"trunk-1"}
