@@ -1,0 +1,68 @@
+# CI per TRD §7: lint+types+unit on every push; integration against the
+# PINNED pi (RPC smoke + golden files, no API key — mock OpenAI endpoint);
+# a non-blocking pi@latest lane to catch upstream drift early.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    name: lint + types + unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      # pi is not installed here — rpc smoke + goldens self-skip, everything else runs
+      - run: npm test
+
+  integration-pinned:
+    name: integration (pinned pi)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      # single source of truth for the pin: the extension's devDependency
+      - name: install pinned pi
+        run: |
+          PI_VERSION=$(node -p "require('./packages/extension/package.json').devDependencies['@earendil-works/pi-coding-agent']")
+          npm install -g "@earendil-works/pi-coding-agent@${PI_VERSION}"
+          pi --version
+      - run: npm run build
+      - name: rpc smoke + goldens against real pi
+        run: npm test -w @pi-context-tree/extension
+
+  integration-latest:
+    name: integration (pi@latest, non-blocking drift probe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: install latest pi
+        run: |
+          npm install -g "@earendil-works/pi-coding-agent@latest"
+          pi --version
+      - run: npm run build
+      # failures here mean upstream drift (session format, RPC protocol, extension API) —
+      # see the risk table in docs/pi-context-tree-spec.md §8 before re-pinning
+      - name: rpc smoke + goldens against pi@latest
+        run: npm test -w @pi-context-tree/extension
