@@ -325,6 +325,7 @@ export class PanelVm {
 		}));
 	}
 
+	/** mockup card: ◆ name / meta (date · model · branch · confirmed) / outcome / ✗ epitaphs */
 	private decisionRows(): PanelRow[] {
 		const decs = this.leafId ? decisionsOnPath(this.tree, this.leafId) : [];
 		if (decs.length === 0) {
@@ -338,14 +339,44 @@ export class PanelVm {
 				},
 			];
 		}
-		return decs.map((d) => ({
-			kind: "decision" as const,
-			id: d.id,
+		const rows: PanelRow[] = [];
+		for (const d of [...decs].reverse()) {
+			const det = d.details as CtreeDecisionDetails | undefined;
+			const fork = det ? this.forkById.get(det.forkEntryId) : undefined;
+			const model = fork?.data.branchModel ?? fork?.data.trunkModel ?? "—";
+			const date = (d.timestamp ?? "").slice(0, 10);
+			const text = textOfContent(d.content);
+			const outcomeLine = text.split("\n").find((l) => l.startsWith("**Outcome:**"));
+			const outcome = outcomeLine ? outcomeLine.replace("**Outcome:**", "").trim() : firstLine(text);
+			rows.push({
+				kind: "decision",
+				id: d.id,
+				depth: 0,
+				glyph: "◆",
+				text: det?.branchName ?? "decision",
+				tokens: estimateEntryTokens(d),
+			});
+			rows.push({
+				kind: "decision",
+				id: d.id,
+				depth: 1,
+				glyph: " ",
+				dim: true,
+				text: `${date} · drafted by ${model} · branch ${det?.forkEntryId ?? "—"} · human-confirmed ✓`,
+			});
+			rows.push({ kind: "decision", id: d.id, depth: 1, glyph: " ", text: outcome });
+			for (const s of det?.siblings ?? []) {
+				rows.push({ kind: "decision", id: d.id, depth: 1, glyph: "✗", text: `${s.name} — ${s.reason}` });
+			}
+		}
+		rows.push({
+			kind: "decision",
 			depth: 0,
-			glyph: "◆",
-			text: `${(d.details as CtreeDecisionDetails | undefined)?.branchName ?? "decision"} — ${firstLine(textOfContent(d.content))}`,
-			tokens: estimateEntryTokens(d),
-		}));
+			glyph: " ",
+			dim: true,
+			text: "(epitaphs keep the trunk model from re-proposing rejected approaches — G3)",
+		});
+		return rows;
 	}
 
 	private inspectRows(): PanelRow[] {

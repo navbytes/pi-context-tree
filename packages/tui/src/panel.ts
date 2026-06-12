@@ -128,9 +128,17 @@ export class ContextPanel {
 				left = `${indent}${row.text.padEnd(40)} ${t.warn("▰".repeat(barLen))}`;
 				break;
 			}
-			case "decision":
-				left = `${indent}${t.decision(row.glyph)} ${row.text}`;
+			case "decision": {
+				const glyph =
+					row.glyph === "✗"
+						? t.presentation.rejected(row.glyph)
+						: row.glyph === "◆"
+							? t.decision(row.glyph)
+							: row.glyph;
+				const text = row.dim ? t.dim(row.text) : row.glyph === "✗" ? t.presentation.rejected(row.text) : row.text;
+				left = `${indent}${glyph} ${text}`;
 				break;
+			}
 			default: {
 				const glyph = row.glyph === "◆" ? t.decision(row.glyph) : row.dim ? t.dim(row.glyph) : t.dim(row.glyph);
 				const text = row.dim ? t.dim(row.text) : row.text;

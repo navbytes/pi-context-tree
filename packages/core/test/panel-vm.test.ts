@@ -165,6 +165,64 @@ describe("PanelVm other views", () => {
 	});
 });
 
+describe("PanelVm decisions cards (mockup contract)", () => {
+	function cardVm() {
+		const b = new SessionBuilder();
+		b.user("kickoff");
+		const a0 = b.assistant("two options");
+		const early = b.fork("storage-layer", { trunkModel: "opus-4.8", branchModel: "haiku-4.5" });
+		b.user("storage work");
+		b.at(early);
+		const dec1 = b.decision(early, "storage-layer", "## Decision: storage-layer\n**Outcome:** session storage won.");
+		b.close(early, "squashed", { decisionEntryId: dec1 });
+		const alt = b.fork("alt-b", { trunkModel: "opus-4.8", branchModel: "haiku-4.5" });
+		b.user("try b");
+		b.assistant("works");
+		b.at(alt);
+		const dec2 = b.customMessage(
+			"ctree/decision",
+			"## Decision: alt-b\n**Outcome:** B wins on simplicity.\n**Why:**\n- speed",
+			true,
+			{ v: 1, forkEntryId: alt, branchName: "alt-b", siblings: [{ name: "alt-a", reason: "too clever" }] },
+		);
+		b.close(alt, "squashed", { decisionEntryId: dec2 });
+		b.user("onwards");
+		const p = new PanelVm({ entries: b.build().entries, project: "tabwrangler" });
+		p.handleKey("D");
+		return { p, dec1, dec2, alt };
+	}
+
+	it("renders each record as a card: header, meta, outcome, epitaphs — newest first", () => {
+		const { p, dec2, alt } = cardVm();
+		const rows = p.rows();
+		expect(rows[0]?.glyph).toBe("◆");
+		expect(rows[0]?.text).toBe("alt-b");
+		expect(rows[0]?.id).toBe(dec2);
+		const meta = rows[1];
+		expect(meta?.dim).toBe(true);
+		expect(meta?.text).toContain("2026-06-12");
+		expect(meta?.text).toContain("drafted by haiku-4.5");
+		expect(meta?.text).toContain(`branch ${alt}`);
+		expect(meta?.text).toContain("human-confirmed ✓");
+		expect(rows[2]?.text).toBe("B wins on simplicity.");
+		const epitaph = rows[3];
+		expect(epitaph?.glyph).toBe("✗");
+		expect(epitaph?.text).toBe("alt-a — too clever");
+		// older record's card follows
+		const older = rows.findIndex((r) => r.text === "storage-layer" && r.glyph === "◆");
+		expect(older).toBeGreaterThan(3);
+		expect(rows[older + 2]?.text).toBe("session storage won.");
+		// G3 note trails the list
+		expect(rows[rows.length - 1]?.text).toContain("G3");
+	});
+
+	it("jumps to the record from any row of its card", () => {
+		const { p, dec2 } = cardVm();
+		p.handleKey("j"); // meta row
+		expect(p.handleKey("enter").action).toEqual({ type: "jump", entryId: dec2 });
+	});
+});
+
 describe("PanelVm read-only mode (pitree)", () => {
 	it("blocks mutating actions with a notify", () => {
 		const { vm: p } = vm({ readOnly: true });

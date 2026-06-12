@@ -97,6 +97,36 @@ describe("ContextPanel crop flow", () => {
 	});
 });
 
+describe("ContextPanel decisions cards", () => {
+	it("renders meta and epitaph rows under the record header", () => {
+		const b = new SessionBuilder();
+		b.user("kickoff");
+		b.assistant("two options");
+		const alt = b.fork("alt-b", { trunkModel: "opus-4.8", branchModel: "haiku-4.5" });
+		b.user("try b");
+		b.at(alt);
+		const dec = b.customMessage(
+			"ctree/decision",
+			"## Decision: alt-b\n**Outcome:** B wins on simplicity.",
+			true,
+			{ v: 1, forkEntryId: alt, branchName: "alt-b", siblings: [{ name: "alt-a", reason: "too clever" }] },
+			undefined,
+		);
+		b.close(alt, "squashed", { decisionEntryId: dec });
+		const panel = new ContextPanel({
+			input: { entries: b.build().entries, project: "p", initialView: "decisions" },
+			onAction: () => {},
+		});
+		const text = panel.render(110).map(strip).join("\n");
+		expect(text).toContain("◆ alt-b");
+		expect(text).toContain("drafted by haiku-4.5");
+		expect(text).toContain("human-confirmed ✓");
+		expect(text).toContain("B wins on simplicity.");
+		expect(text).toContain("✗ alt-a — too clever");
+		expect(text).toContain("G3");
+	});
+});
+
 describe("ContextPanel actions", () => {
 	it("emits close on q and esc-from-tree", () => {
 		const a1: PanelAction[] = [];
