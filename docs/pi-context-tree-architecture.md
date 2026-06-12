@@ -169,8 +169,8 @@ Options considered:
 
 ## 11. Open items to verify at implementation start
 
-1. `pi.sendMessage(..., {triggerTurn:false, deliverAs:"nextTurn"})` while idle: confirm it persists the entry immediately at the current leaf (vs queuing until next turn).
-2. Exact `completeSimple` export/signature in `@earendil-works/ai` + auth reuse from inside an extension.
-3. `overlayOptions` full-screen semantics (M2 spike).
-4. `navigateTree(..., {summarize:false})` fully bypasses the three-choice prompt regardless of `branchSummary.skipPrompt`.
-5. Whether `custom_message` content is counted by `getContextUsage()` immediately (gauge correctness right after merge).
+1. ~~`pi.sendMessage(..., {triggerTurn:false, deliverAs:"nextTurn"})` while idle: confirm it persists the entry immediately at the current leaf (vs queuing until next turn).~~ **RESOLVED (squash golden, 2026-06-12): it does NOT persist** — `deliverAs:"nextTurn"` only stages the message in the in-memory `_pendingNextTurnMessages` (agent-session.ts), written with (and after) the *next user prompt*, lost on quit. The correct call is `{triggerTurn:false}` with **no** `deliverAs`: agent-session's not-streaming/no-trigger branch appends the `custom_message` entry to state + session immediately, no turn fired. merge.ts/crop-cmd.ts use this now; the RPC goldens pin the resulting write order.
+2. ~~Exact `completeSimple` export/signature in `@earendil-works/ai` + auth reuse from inside an extension.~~ **RESOLVED (M4):** `complete(model, context, {apiKey, headers})` from `@earendil-works/pi-ai` with auth from `ctx.modelRegistry.getApiKeyAndHeaders(model)` — see extension/src/draft.ts; exercised against a custom provider in the RPC goldens.
+3. `overlayOptions` full-screen semantics (M2 spike). **Still open for human review** — overlay opens/closes cleanly in tests, but sizing/feel needs eyes (P0).
+4. `navigateTree(..., {summarize:false})` fully bypasses the three-choice prompt regardless of `branchSummary.skipPrompt`. **Verified in RPC mode** (goldens: no `branch_summary` entry, no dialog ui-request during merge/crop navigation); confirm once in the TUI during P0.
+5. Whether `custom_message` content is counted by `getContextUsage()` immediately (gauge correctness right after merge). **Still open** (P0 — needs the TUI gauge).

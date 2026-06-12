@@ -12,7 +12,7 @@ Git-style `/branch` · `/merge` · `/crop` workflow and a rich context panel for
 |---|---|---|
 | `packages/core` | session JSONL parser (streaming, fault-tolerant), tree + context-slice model (compaction-aware), ctree fork/close status derivation, chars/4 estimator + gauge bands, consumers, decision-record template, crop planner, forest scanner, panel view-model. Zero runtime deps, zero pi deps. | **✅ 72 tests** |
 | `packages/tui` | `ContextPanel` (tree/crop/consumers/decisions/inspect) + gauge on pi-tui; xterm-headless harness | **✅ 7 tests** |
-| `packages/extension` | `/branch` `/merge` (squash · --no-llm · discard · tournament) `/crop` (--auto --dry-run) `/panel` (+Ctrl+T) `/decisions`, ambient status gauge + title, LLM drafting via pi-ai. Loaded from source by pi (jiti), no build. | **✅ 16 tests** (incl. real-pi RPC smoke) |
+| `packages/extension` | `/branch` `/merge` (squash · --no-llm · discard · tournament) `/crop` (--auto --apply --dry-run) `/panel` (+Ctrl+T) `/decisions`, ambient status gauge + title, LLM drafting via pi-ai. Loaded from source by pi (jiti), no build. | **✅ 35 tests** (incl. real-pi RPC smoke + golden scenarios) |
 | `packages/pitree` | `pitree [--dangling --json]` forest CLI + `pitree ui` read-only panel | **✅ 4 tests** (zero-write asserted) |
 | `fixtures/` | deterministic committed fixtures (`npm run fixtures` regenerates) | ✅ |
 
@@ -42,3 +42,5 @@ npm run fixtures    # regenerate committed fixtures (deterministic)
 ```
 
 TDD: every module in `core` was built test-first; `packages/core/src/testkit.ts` exports the deterministic `SessionBuilder` used by tests and fixtures (it mirrors pi's append semantics — `at(id)` moves the leaf, i.e. branches).
+
+**Golden integration tests** (`packages/extension/test/golden/`): the real pinned pi runs in `--mode rpc` against a mock OpenAI endpoint; squash / discard / tournament / crop scenarios pin the resulting session JSONL byte-for-byte (normalized ids/timestamps). They self-skip when `pi` is not on PATH; re-record intended changes with `UPDATE_GOLDENS=1 npm test -w @pi-context-tree/extension`. CI (`.github/workflows/ci.yml`) runs lint+types+unit per push, integration against the pinned pi, and a non-blocking `pi@latest` drift lane.
