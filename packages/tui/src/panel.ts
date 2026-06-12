@@ -81,6 +81,8 @@ export class ContextPanel {
 			` ${renderGauge({ tokens: h.tokens, window: h.window, estimated: h.estimated, barWidth: Math.min(30, Math.max(10, width - 50)) }, t)}`,
 		);
 		lines.push(t.dim("─".repeat(Math.max(0, width))));
+		const sect = this.vm.sectionTitle();
+		if (sect) lines.push(` ${t.dim(sect)}`);
 
 		const rows = this.vm.rows();
 		const maxBody = this.opts.maxBody ?? 26;

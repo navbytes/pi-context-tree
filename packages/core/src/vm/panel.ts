@@ -8,7 +8,7 @@
 import { aggregateConsumers } from "../consumers.ts";
 import { type CropCandidate, type CropPlan, autoSelect, cropCandidates, planCrop } from "../crop.ts";
 import { type ForkInfo, type ForkPresentation, decisionsOnPath, extractForks, nearestOpenFork } from "../ctree.ts";
-import { type Band, band, estimateContextTokens, estimateEntryTokens } from "../estimate.ts";
+import { type Band, band, estimateContextTokens, estimateEntryTokens, fmtTokens } from "../estimate.ts";
 import { serializeEntry, textOfContent } from "../serialize.ts";
 import { SessionTree, contextSlice } from "../tree.ts";
 import type { CtreeCropData, CtreeDecisionDetails, SessionEntry, UserContent } from "../types.ts";
@@ -550,6 +550,30 @@ export class PanelVm {
 		}
 
 		return {};
+	}
+
+	/** mockup secthead line under the divider; undefined = no section title (inspect) */
+	sectionTitle(): string | undefined {
+		switch (this.view) {
+			case "tree": {
+				const base = "TRUNK + BRANCHES · est tokens (~chars/4)";
+				return this.input.sessionName ? `SESSION ${this.input.sessionName} · ${base}` : base;
+			}
+			case "crop": {
+				const cands = this.getCandidates();
+				const reclaim = [...this.marks].reduce(
+					(sum, id) => sum + (cands.find((c) => c.entryId === id)?.estTokens ?? 0),
+					0,
+				);
+				return `CROP — TOOL/MCP RESULTS ON THIS BRANCH · reclaim ~${fmtTokens(reclaim)} · stubs land on a new branch point, originals untouched`;
+			}
+			case "consumers":
+				return "TOKENS BY SOURCE — CURRENT BRANCH CONTEXT";
+			case "decisions":
+				return "DECISION RECORDS ON TRUNK (newest first)";
+			case "inspect":
+				return undefined;
+		}
 	}
 
 	footerHelp(): string {

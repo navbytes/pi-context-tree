@@ -165,6 +165,36 @@ describe("PanelVm other views", () => {
 	});
 });
 
+describe("PanelVm section titles (mockup sectheads)", () => {
+	it("tree shows trunk+branches with the estimator note, session name when present", () => {
+		const { vm: p } = vm({ sessionName: "2026-06-12-a" });
+		expect(p.sectionTitle()).toBe("SESSION 2026-06-12-a · TRUNK + BRANCHES · est tokens (~chars/4)");
+		const { vm: bare } = vm();
+		expect(bare.sectionTitle()).toBe("TRUNK + BRANCHES · est tokens (~chars/4)");
+	});
+
+	it("crop shows a live reclaim total for marked entries", () => {
+		const { vm: p, ids } = vm();
+		p.handleKey("c");
+		expect(p.sectionTitle()).toContain("CROP — TOOL/MCP RESULTS ON THIS BRANCH");
+		expect(p.sectionTitle()).toContain("reclaim ~0");
+		const idx = p.rows().findIndex((r) => r.id === ids.snap);
+		while (p.sel < idx) p.handleKey("j");
+		p.handleKey("space");
+		expect(p.sectionTitle()).toContain("reclaim ~15k");
+		expect(p.sectionTitle()).toContain("originals untouched");
+	});
+
+	it("names the consumers and decisions views", () => {
+		const { vm: p } = vm();
+		p.handleKey("u");
+		expect(p.sectionTitle()).toBe("TOKENS BY SOURCE — CURRENT BRANCH CONTEXT");
+		p.handleKey("esc");
+		p.handleKey("D");
+		expect(p.sectionTitle()).toBe("DECISION RECORDS ON TRUNK (newest first)");
+	});
+});
+
 describe("PanelVm decisions cards (mockup contract)", () => {
 	function cardVm() {
 		const b = new SessionBuilder();

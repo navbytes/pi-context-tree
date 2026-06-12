@@ -81,6 +81,7 @@ describe("ContextPanel crop flow", () => {
 		const text = panel.render(100).map(strip).join("\n");
 		expect(text).toContain("[✗]");
 		expect(text).toContain("(latest — protected)");
+		expect(text).toContain("CROP — TOOL/MCP RESULTS ON THIS BRANCH · reclaim ~15k");
 		panel.handleInput("\r");
 		expect(actions).toHaveLength(1);
 		expect(actions[0]?.type).toBe("crop-apply");
