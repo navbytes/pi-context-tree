@@ -1,0 +1,25 @@
+{
+	"name": "pi-context-tree",
+	"private": true,
+	"type": "module",
+	"version": "0.0.1",
+	"description": "Git-style /branch /merge /crop workflow + context panel for pi sessions",
+	"workspaces": ["packages/*"],
+	"engines": {
+		"node": ">=22.19.0"
+	},
+	"scripts": {
+		"build": "npm run build -w @pi-context-tree/core && npm run build -w @pi-context-tree/tui && npm run build -w @pi-context-tree/pitree",
+		"test": "npm run build && npm run test --workspaces --if-present",
+		"check": "npm run check:types && npm run check:lint",
+		"check:types": "tsc -p packages/core/tsconfig.json --noEmit && tsc -p packages/tui/tsconfig.json --noEmit && tsc -p packages/extension/tsconfig.json --noEmit && tsc -p packages/pitree/tsconfig.json --noEmit",
+		"check:lint": "biome check .",
+		"fixtures": "node fixtures/generate.ts"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@types/node": "^22.10.0",
+		"typescript": "^5.7.0",
+		"vitest": "^3.2.4"
+	}
+}

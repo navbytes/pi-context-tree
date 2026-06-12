@@ -1,0 +1,27 @@
+{
+	"name": "@pi-context-tree/core",
+	"version": "0.0.1",
+	"type": "module",
+	"description": "pi-independent session parsing, tree/forest model, token estimation, ctree status, crop planning, decision records",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./testkit": {
+			"types": "./dist/testkit.d.ts",
+			"import": "./dist/testkit.js"
+		}
+	},
+	"files": ["dist"],
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"test": "vitest --run",
+		"test:watch": "vitest"
+	},
+	"engines": {
+		"node": ">=22.19.0"
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"name": "@pi-context-tree/extension",
+	"version": "0.0.1",
+	"type": "module",
+	"description": "pi extension: /branch /merge /crop /panel /decisions + ambient gauge/title. Loaded from source by pi (jiti) — no build step.",
+	"main": "./src/index.ts",
+	"scripts": {
+		"test": "vitest --run"
+	},
+	"dependencies": {
+		"@earendil-works/pi-ai": "0.79.1",
+		"@pi-context-tree/core": "*",
+		"@pi-context-tree/tui": "*"
+	},
+	"devDependencies": {
+		"@earendil-works/pi-coding-agent": "0.79.1"
+	},
+	"engines": {
+		"node": ">=22.19.0"
+	}
+}
