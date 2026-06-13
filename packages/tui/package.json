@@ -17,11 +17,14 @@
 		"test": "vitest --run"
 	},
 	"dependencies": {
-		"@earendil-works/pi-tui": "0.79.1",
 		"@pi-context-tree/core": "*",
 		"chalk": "^5.3.0"
 	},
+	"peerDependencies": {
+		"@earendil-works/pi-tui": "*"
+	},
 	"devDependencies": {
+		"@earendil-works/pi-tui": "0.79.1",
 		"@xterm/headless": "^5.5.0"
 	},
 	"engines": {
