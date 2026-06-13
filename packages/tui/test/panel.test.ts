@@ -53,6 +53,26 @@ describe("ContextPanel rendering", () => {
 		expect(text).toContain("[+]"); // squashed fork folded
 	});
 
+	it("pads the body to maxBody so the overlay always fills its height", () => {
+		const { panel } = makePanel();
+		const short = new ContextPanel({
+			input: { entries: buildInput().entries, project: "p" },
+			maxBody: 30,
+			onAction: () => {},
+		});
+		const lines = short.render(100);
+		// header(1) + gauge(1) + divider(1) + secthead(1) + body(30) + hint slot(1) + divider(1) + notify slot(1) + footer(1)
+		expect(lines.length).toBe(38);
+		// overflow keeps the same height: the hint slot holds the "… N more" line
+		const tall = new ContextPanel({
+			input: { entries: buildInput().entries, project: "p" },
+			maxBody: 3,
+			onAction: () => {},
+		});
+		expect(tall.render(100).length).toBe(11);
+		expect(panel.render(100).length).toBeGreaterThan(10);
+	});
+
 	it("never exceeds the given width", () => {
 		const { panel } = makePanel();
 		for (const w of [60, 80, 100]) {

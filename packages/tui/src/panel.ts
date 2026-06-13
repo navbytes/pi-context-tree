@@ -96,12 +96,18 @@ export class ContextPanel {
 		visible.forEach((row, i) => {
 			lines.push(this.renderRow(row, this.scroll + i === this.vm.sel, width));
 		});
+		// constant body height (maxBody + hint slot) so the overlay fills the screen and
+		// doesn't shift by a row when a view overflows (full-screen panel, mockup contract)
+		for (let i = visible.length; i < maxBody; i++) lines.push("");
 		if (rows.length > this.scroll + maxBody) {
 			lines.push(t.dim(` … ${rows.length - this.scroll - maxBody} more (${this.vm.sel + 1}/${rows.length})`));
+		} else {
+			lines.push("");
 		}
 
 		lines.push(t.dim("─".repeat(Math.max(0, width))));
-		if (this.lastNotify) lines.push(` ${t.warn(this.lastNotify)}`);
+		// notify slot is always present so the panel height never shifts
+		lines.push(this.lastNotify ? ` ${t.warn(this.lastNotify)}` : "");
 		lines.push(` ${t.dim(this.vm.footerHelp())}`);
 
 		return lines.map((l) => (visibleWidth(l) > width ? truncateToWidth(l, width, "…") : l));
