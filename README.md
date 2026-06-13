@@ -46,7 +46,11 @@ Surgically stubs out fat tool/MCP results. Interactive by default: opens the pan
 
 Auto rules: ≥ `--min-tokens` (default 10k), older than `--older-than` assistant turns (default 2), never the latest result per tool (cropping those needs an explicit double-mark in the panel), never `--keep` matches.
 
-Applying branches at the anchor and writes ONE `ctree/crop-tail` reconstruction block (kept content + `[cropped: tool arg, ~tokens, sha8]` stubs) plus a `ctree/crop` marker. Originals stay in the JSONL, recoverable forever.
+**Two granularities, one mechanism.** The crop panel has a `t` toggle:
+- **result mode** (default) — stub individual fat tool/MCP results, replaced by `[cropped: tool arg, ~tokens, sha8]`.
+- **turn mode** — remove a whole **Q&A turn** (a user question + every answer/tool entry it spawned) *together*. Removing only the answer would orphan `tool_call`/`tool_result` pairs and break user/assistant alternation, so turns drop as a unit. A removed turn collapses to one label-free `[dropped turn — N entries, ~tokens, recoverable: sha8]` note (the question text is **not** re-injected; the readable label is kept in the marker). The current/leaf turn is protected; ◆ decision records can never be swept up. Turn removal is panel-only (it's a "pick this specific exchange" action, not a bulk rule).
+
+Both apply the same way: branch at the anchor, write ONE `ctree/crop-tail` reconstruction block plus a `ctree/crop` marker (`stubbed[]` and/or `dropped[]`). Originals stay in the JSONL, recoverable forever.
 
 ### `/panel` (also `Ctrl+T`) and `/decisions`
 The full-screen context panel (an overlay over pi). `/decisions` opens it straight on the decisions view (and prints a text listing where no TUI is available, e.g. RPC mode). The panel stays up across actions: pick a mutation (jump/branch/merge/crop-apply), it executes in command context after re-validating the session, and the panel reopens with fresh state until you close it. `Ctrl+T` opens view-only in 0.79.1 (shortcuts get no command context and pi has no command-invoke API) — use `/panel` for mutations.
@@ -56,7 +60,7 @@ The full-screen context panel (an overlay over pi). `/decisions` opens it straig
 | view | keys |
 |---|---|
 | **tree** | `⏎` fold/unfold fork, jump leaf to entry · `b` branch from entry · `m` merge flow · `c` crop · `i` inspect entry · `D` decisions · `u` consumers |
-| **crop** | `space` mark/unmark (`space space` to override latest-per-tool protection) · `a` apply --auto rules · `⏎` apply plan |
+| **crop** | `t` toggle result ⇄ turn mode · `space` mark/unmark (result: `space space` overrides latest-per-tool protection; turn: marks the whole Q&A turn) · `a` apply --auto rules (result mode) · `⏎` apply plan |
 | **consumers** | `c` jump to crop |
 | **decisions** | `⏎` jump to the ◆ record on the trunk |
 | **inspect** | `c` pre-mark this entry for cropping |

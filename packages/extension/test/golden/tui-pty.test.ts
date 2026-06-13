@@ -130,4 +130,95 @@ describe.skipIf(!PI || !EXPECT)("real pi TUI in a PTY (mockup keymap walk)", () 
 		expect(close?.data?.status, "discard close marker not written to the session file").toBe("discarded");
 		expect(close?.data?.note).toBe("dead end");
 	});
+
+	it("removes a whole Q&A turn through the crop panel (t → space → apply)", { timeout: 120_000 }, () => {
+		const root = realpathSync(mkdtempSync(join(tmpdir(), "ctree-pty-turn-")));
+		const cwd = join(root, "project");
+		const agentDir = join(root, "agent");
+		const sessionDir = join(root, "sessions");
+		const capture = join(root, "capture.raw");
+		mkdirSync(cwd, { recursive: true });
+		mkdirSync(sessionDir, { recursive: true });
+		writeMockModels(agentDir, "http://127.0.0.1:9/v1", ["trunk-1"]);
+
+		// three clean turns; the middle one is fat and removable, the last holds the leaf (protected)
+		const b = new SessionBuilder(cwd);
+		b.modelChange("mock", "trunk-1");
+		b.user("what's a tmpdir collision?");
+		b.assistant("two workers writing the same fixture path", { provider: "mock", model: "trunk-1" });
+		b.user("show me the offending file");
+		b.toolUse("read", { path: "big.txt" }, filler(30_000, "BIGFILE-"));
+		b.assistant("here it is", { provider: "mock", model: "trunk-1" });
+		b.user("thanks");
+		b.assistant("you're welcome", { provider: "mock", model: "trunk-1" });
+		const sessionFile = join(root, "seed.jsonl");
+		writeFileSync(sessionFile, b.build().text);
+
+		const script = join(root, "walk.exp");
+		writeFileSync(
+			script,
+			[
+				"set timeout 30",
+				'set stty_init "rows 45 columns 120"',
+				`set env(PI_CODING_AGENT_DIR) "${agentDir}"`,
+				`log_file -noappend "${capture}"`,
+				`cd "${cwd}"`,
+				`spawn "${PI}" --session "${sessionFile}" --session-dir "${sessionDir}" --provider mock --model trunk-1 -e "${EXTENSION_ENTRY}"`,
+				'proc pump {secs} { expect -timeout $secs -re "ZZZ_NEVER_MATCHES_ZZZ" {} timeout {} }',
+				"pump 6",
+				'send "/panel\\r"',
+				"pump 4",
+				'send "c"', // crop view (result mode)
+				"pump 2",
+				'send "t"', // toggle to turn mode
+				"pump 2",
+				'send "j"', // move to the middle (fat, removable) turn
+				"pump 1",
+				'send " "', // mark the whole turn
+				"pump 1",
+				'send "\\r"', // apply → branch + reconstruction
+				"pump 4",
+				'send "q"', // close the reopened panel
+				"pump 2",
+				'send "\\x03"',
+				"pump 1",
+				'send "\\x03"',
+				"pump 2",
+				"exit 0",
+			].join("\n"),
+		);
+
+		try {
+			execFileSync(EXPECT as string, [script], { encoding: "utf8", timeout: 100_000 });
+		} catch (err) {
+			const e = err as { stdout?: string; message: string };
+			throw new Error(`expect turn-removal walk failed: ${e.message}\n${(e.stdout ?? "").slice(-1500)}`);
+		}
+
+		const raw = readFileSync(capture, "utf8");
+		const tail = `\n--- capture tail ---\n${raw.slice(-2000)}`;
+		expect(raw, `pi crashed${tail}`).not.toContain("uncaughtException");
+		expect(raw, `turn mode never painted${tail}`).toContain("REMOVE WHOLE TURNS");
+
+		const entries = readFileSync(sessionFile, "utf8")
+			.trim()
+			.split("\n")
+			.map((l) => JSON.parse(l) as { type?: string; customType?: string; content?: string; data?: Record<string, unknown> });
+
+		// the removal wrote a ctree/crop marker carrying the dropped turn
+		const marker = entries.find((e) => e.customType === "ctree/crop");
+		const dropped = marker?.data?.dropped as { userId: string; label: string }[] | undefined;
+		expect(dropped?.[0]?.label, `no dropped turn in the marker${tail}`).toBe("show me the offending file");
+
+		// the reconstruction tail dropped the fat body + answer, kept the survivor, didn't echo the question
+		const cropTail = entries.find((e) => e.customType === "ctree/crop-tail");
+		expect(cropTail?.content).toContain("[dropped turn —");
+		expect(cropTail?.content).not.toContain("BIGFILE-BIGFILE-");
+		expect(cropTail?.content).not.toContain("show me the offending file");
+		expect(cropTail?.content).toContain("you're welcome");
+
+		// append-only: the original fat tool result is still in the file
+		const originalKept = readFileSync(sessionFile, "utf8").includes("BIGFILE-BIGFILE-");
+		expect(originalKept, "original turn content was destroyed (must stay recoverable)").toBe(true);
+	});
 });
