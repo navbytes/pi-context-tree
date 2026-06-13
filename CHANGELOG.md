@@ -19,7 +19,7 @@ All notable changes to this project are documented here. The format is based on
 
 ## [0.1.0] — 2026-06-13
 
-First tagged release. All v1 milestones (M1–M8) complete; 162 tests; CI on three lanes.
+First tagged release. All v1 milestones (M1–M8) complete; CI green on three lanes.
 
 ### Added
 - **`/branch <name> [model]`** — label the current point (mirrored into pi's native labels) and fork, optionally onto a cheaper branch model; trunk model recorded and restored on merge; model/branch-name autocomplete.
