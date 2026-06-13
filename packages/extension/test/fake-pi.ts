@@ -67,6 +67,8 @@ export class FakeUi implements UiLike {
 	statuses = new Map<string, string | undefined>();
 	titles: string[] = [];
 	selectCalls: { title: string; options: string[] }[] = [];
+	/** unset by default — tests opt in to a TUI-capable ui by assigning (UiLike.custom is optional) */
+	custom?: <T>(factory: unknown, options?: unknown) => Promise<T> = undefined;
 
 	notify(msg: string, type?: "info" | "warning" | "error"): void {
 		this.notifications.push({ msg, type });
