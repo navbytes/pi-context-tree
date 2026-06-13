@@ -76,7 +76,7 @@ Footer status `⎇ branch · ctx N% band`, terminal title `project (branch) (pi)
 
 ```sh
 npm install
-npm test            # builds core/tui/pitree dist, then vitest in all workspaces (128 tests)
+npm test            # builds core/tui/pitree dist, then vitest in all workspaces (146 tests)
 npm run check       # tsc --noEmit ×4 packages + biome
 npm run fixtures    # regenerate committed fixtures (deterministic, byte-identical)
 ```
