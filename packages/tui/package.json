@@ -1,6 +1,6 @@
 {
 	"name": "@pi-context-tree/tui",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"type": "module",
 	"description": "Context panel components built on pi-tui (ContextPanel, gauge, …)",
 	"main": "./dist/index.js",
@@ -17,7 +17,7 @@
 		"test": "vitest --run"
 	},
 	"dependencies": {
-		"@pi-context-tree/core": "0.1.0",
+		"@pi-context-tree/core": "0.1.1",
 		"chalk": "^5.3.0"
 	},
 	"peerDependencies": {

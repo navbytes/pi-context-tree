@@ -1,7 +1,7 @@
 {
 	"name": "pi-context-tree",
 	"type": "module",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Git-style /branch /merge /crop workflow + context panel for pi sessions — keep your agent's context small, fresh, and relevant.",
 	"keywords": [
 		"pi-package",
@@ -27,8 +27,8 @@
 	"bugs": {
 		"url": "https://github.com/navbytes/pi-context-tree/issues"
 	},
-	"image": "https://raw.githubusercontent.com/navbytes/pi-context-tree/main/docs/assets/demo.gif",
-	"video": "https://raw.githubusercontent.com/navbytes/pi-context-tree/main/docs/assets/demo.mp4",
+	"image": "https://cdn.jsdelivr.net/gh/navbytes/pi-context-tree@main/docs/assets/demo.gif",
+	"video": "https://cdn.jsdelivr.net/gh/navbytes/pi-context-tree@main/docs/assets/demo.mp4",
 	"pi": {
 		"extensions": ["./extensions"]
 	},
@@ -46,7 +46,7 @@
 		"fixtures": "node fixtures/generate.ts"
 	},
 	"dependencies": {
-		"@pi-context-tree/extension": "0.1.0",
+		"@pi-context-tree/extension": "0.1.1",
 		"@types/node": "^22.10.0",
 		"typescript": "^5.7.0"
 	},
