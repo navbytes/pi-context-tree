@@ -7,6 +7,40 @@ interface CapturedMount {
 	panel?: { opts?: { maxBody?: number } };
 }
 
+describe("panel reopens after an action (mockup: the panel stays up)", () => {
+	it("executes a jump, reopens with fresh state, and stops on close", async () => {
+		const w = makeFake();
+		w.session.user("kickoff");
+		const target = w.session.assistant("plan");
+		w.session.user("later");
+		const queue: unknown[] = [{ type: "jump", entryId: target }, { type: "close" }];
+		let opens = 0;
+		w.ui.custom = async <T>(): Promise<T> => {
+			opens += 1;
+			return queue.shift() as T;
+		};
+		registerPanel(w.pi, { draft: async () => "unused" });
+
+		await w.commands.get("panel")?.("", w.ctx);
+
+		expect(opens).toBe(2); // reopened once after the jump, closed on the second action
+		expect(w.calls.navigate).toEqual([{ target, options: { summarize: false } }]);
+	});
+
+	it("stops immediately when the panel is dismissed without an action", async () => {
+		const w = makeFake();
+		w.session.user("kickoff");
+		let opens = 0;
+		w.ui.custom = async <T>(): Promise<T> => {
+			opens += 1;
+			return undefined as T;
+		};
+		registerPanel(w.pi, { draft: async () => "unused" });
+		await w.commands.get("panel")?.("", w.ctx);
+		expect(opens).toBe(1);
+	});
+});
+
 describe("openPanel overlay host", () => {
 	it("mounts full-screen: width 100% and body rows sized from the terminal", async () => {
 		const w = makeFake();

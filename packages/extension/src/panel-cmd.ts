@@ -138,20 +138,23 @@ export async function executePanelAction(
 	}
 }
 
+/** Open → act → reopen with fresh state until the user closes (mockup: the panel stays up). */
+async function runPanel(pi: PiLike, ctx: CtxLike, deps: Deps, opts: PanelOpenOptions = {}): Promise<void> {
+	for (let i = 0; i < 50; i++) {
+		const action = await openPanel(pi, ctx, opts);
+		if (!action || action.type === "close") return;
+		await executePanelAction(pi, ctx, action, deps);
+	}
+}
+
 export function registerPanel(pi: PiLike, deps: Deps): void {
 	pi.registerCommand("panel", {
 		description: "pi-context-tree: full-screen context panel (tree · crop · consumers · decisions)",
-		handler: async (_args, ctx) => {
-			const action = await openPanel(pi, ctx, {});
-			await executePanelAction(pi, ctx, action, deps);
-		},
+		handler: (_args, ctx) => runPanel(pi, ctx, deps),
 	});
 	pi.registerShortcut?.("ctrl+t", {
 		description: "pi-context-tree: open the context panel",
-		handler: async (ctx) => {
-			const action = await openPanel(pi, ctx, {});
-			await executePanelAction(pi, ctx, action, deps);
-		},
+		handler: (ctx) => runPanel(pi, ctx, deps),
 	});
 	pi.registerCommand("decisions", {
 		description: "pi-context-tree: decision records on the current trunk (F7)",
@@ -160,8 +163,7 @@ export function registerPanel(pi: PiLike, deps: Deps): void {
 				notifyDecisions(ctx);
 				return;
 			}
-			const action = await openPanel(pi, ctx, { initialView: "decisions" });
-			await executePanelAction(pi, ctx, action, deps);
+			await runPanel(pi, ctx, deps, { initialView: "decisions" });
 		},
 	});
 }
