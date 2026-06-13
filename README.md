@@ -94,14 +94,17 @@ The full-screen context panel — the tree with token costs, branch status color
 ## Install
 
 ```sh
-# as a pi package (recommended — survives pi restarts, auto-updates on reinstall):
+# from npm (recommended — versioned releases):
+pi install npm:pi-context-tree
+
+# …or straight from GitHub (tracks the default branch):
 pi install git:github.com/navbytes/pi-context-tree
 
-# update (re-run install) · uninstall:
-pi remove git:github.com/navbytes/pi-context-tree
+# update: re-run the install  ·  uninstall:
+pi remove npm:pi-context-tree
 ```
 
-> For a reproducible install, pin to a release: `pi install git:github.com/navbytes/pi-context-tree@v0.1.0`. Without an `@tag` it tracks the default branch. See [Status &amp; compatibility](#status--compatibility).
+> Pin a version for reproducibility: `pi install npm:pi-context-tree@0.1.0` (or `git:…@v0.1.0` from GitHub). The bare forms track the latest release / the default branch. See [Status &amp; compatibility](#status--compatibility).
 
 <details>
 <summary>Development tree &amp; standalone CLI</summary>
@@ -111,9 +114,10 @@ pi remove git:github.com/navbytes/pi-context-tree
 pi remove git:github.com/navbytes/pi-context-tree   # if previously installed
 pi -e /path/to/pi-context-tree
 
-# standalone forest CLI (read-only, never writes):
-node packages/pitree/dist/cli.js [dir] [--dangling] [--json]
-node packages/pitree/dist/cli.js ui                  # session picker → read-only panel
+# standalone forest CLI (read-only, never writes) — install globally from npm:
+npm install -g @pi-context-tree/pitree
+pitree [dir] [--dangling] [--json]
+pitree ui                                            # session picker → read-only panel
 ```
 </details>
 
@@ -123,7 +127,7 @@ The core loop, end to end:
 
 ```sh
 # 1. install into pi (survives restarts; re-run to update)
-pi install git:github.com/navbytes/pi-context-tree
+pi install npm:pi-context-tree
 
 # 2. inside a pi session, fork off for a side-quest
 /branch fix-flaky-test               # add a model id (e.g. haiku-4.5) to run the branch on a cheaper one
@@ -230,7 +234,7 @@ Flags dangling branches (open forks with no close marker) across every project. 
 
 **Does this ever rewrite or delete my session?** No — every change is append-only. `/merge` and `/crop` add new entries and the originals stay recoverable on the previous branch, verified by byte-for-byte golden tests against real pi.
 
-**How do I pin a version?** `pi install git:github.com/navbytes/pi-context-tree@v0.1.0` installs a specific tagged release; without the `@tag` it tracks the default branch and updates whenever you reinstall.
+**How do I pin a version?** `pi install npm:pi-context-tree@0.1.0` installs a specific release from npm (or `git:…@v0.1.0` from GitHub). The bare `npm:` / `git:` forms track the latest published release / the default branch and update whenever you reinstall.
 
 ## Development
 
