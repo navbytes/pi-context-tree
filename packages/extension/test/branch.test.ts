@@ -1,6 +1,7 @@
 import { type CtreeForkData, ctreeForkData } from "@pi-context-tree/core";
 import { describe, expect, it } from "vitest";
-import { branchHandler } from "../src/branch.ts";
+import { branchHandler, registerBranch } from "../src/branch.ts";
+import { forgetCtx, rememberCtx } from "../src/ctx-cache.ts";
 import { entriesByType, makeFake } from "./fake-pi.ts";
 
 describe("/branch", () => {
@@ -48,5 +49,28 @@ describe("/branch", () => {
 		session.user("kickoff");
 		await branchHandler(pi, ctx, "try-gpt openai/gpt-5.2");
 		expect(calls.setModel.map((m) => `${m.provider}/${m.id}`)).toEqual(["openai/gpt-5.2"]);
+	});
+});
+
+describe("/branch model autocomplete (remembered-ctx bridge)", () => {
+	it("completes the model argument from the registry seen on the last event", () => {
+		const { pi, ctx, completions } = makeFake();
+		registerBranch(pi);
+		rememberCtx(ctx); // ambient events stash the ctx — completions have no ctx param in pi 0.79.1
+		const complete = completions.get("branch");
+		expect(complete?.("fix-x ha")?.map((c) => c.value)).toEqual(["anthropic/haiku-4.5"]);
+		expect(complete?.("fix-x anthropic/")?.map((c) => c.value)).toEqual([
+			"anthropic/opus-4.8",
+			"anthropic/haiku-4.5",
+		]);
+	});
+
+	it("offers nothing for the name argument or when no ctx has been seen", () => {
+		const { pi, completions } = makeFake();
+		registerBranch(pi);
+		forgetCtx();
+		const complete = completions.get("branch");
+		expect(complete?.("fix")).toBeNull(); // first arg = branch name, not a model
+		expect(complete?.("fix-x ha")).toBeNull(); // no ctx seen yet
 	});
 });

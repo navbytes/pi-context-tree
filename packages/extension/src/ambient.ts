@@ -8,6 +8,7 @@
 
 import { band, contextSlice, estimateContextTokens } from "@pi-context-tree/core";
 import { type CtxLike, type PiLike, projectName } from "./adapter.ts";
+import { rememberCtx } from "./ctx-cache.ts";
 import { type SessionState, deriveState } from "./state.ts";
 
 let warnedRed = false;
@@ -21,6 +22,7 @@ function nudgeOnRed(ctx: CtxLike, b: string): void {
 }
 
 export function refreshAmbient(pi: PiLike, ctx: CtxLike): void {
+	rememberCtx(ctx); // feeds argument completions (ctx-cache.ts)
 	let state: SessionState | undefined;
 	try {
 		state = deriveState(ctx);

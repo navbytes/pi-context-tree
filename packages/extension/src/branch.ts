@@ -7,6 +7,7 @@
 import { CTREE_FORK } from "@pi-context-tree/core";
 import { type CmdCtxLike, type PiLike, appendAndGetId, leafIdOf, modelKey, resolveModel } from "./adapter.ts";
 import { refreshAmbient } from "./ambient.ts";
+import { modelCompletions } from "./ctx-cache.ts";
 import { deriveState } from "./state.ts";
 
 const NAME_RE = /^[a-z0-9][a-z0-9._-]*$/i;
@@ -66,10 +67,7 @@ export function registerBranch(pi: PiLike): void {
 	pi.registerCommand("branch", {
 		description: "pi-context-tree: label this point and branch off (optionally onto a cheaper model)",
 		handler: (args, ctx) => branchHandler(pi, ctx, args),
-		getArgumentCompletions: (prefix) => {
-			const parts = prefix.split(/\s+/);
-			if (parts.length < 2) return null;
-			return null; // model completion needs ctx (registry) — pi only passes prefix; skip in v1
-		},
+		// second argument completes against the model registry via the remembered-ctx bridge
+		getArgumentCompletions: (prefix) => modelCompletions(prefix),
 	});
 }

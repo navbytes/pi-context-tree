@@ -112,6 +112,7 @@ export interface FakeWorld {
 		labels: [string, string | undefined][];
 	};
 	commands: Map<string, (args: string, ctx: CmdCtxLike) => Promise<void> | void>;
+	completions: Map<string, ((prefix: string) => { value: string; label?: string }[] | null) | undefined>;
 }
 
 const KNOWN_MODELS: ModelLike[] = [
@@ -125,10 +126,14 @@ export function makeFake(): FakeWorld {
 	const session = new FakeSession();
 	const calls: FakeWorld["calls"] = { navigate: [], setModel: [], labels: [] };
 	const commands = new Map<string, (args: string, ctx: CmdCtxLike) => Promise<void> | void>();
+	const completions: FakeWorld["completions"] = new Map();
 	let currentModel: ModelLike = KNOWN_MODELS[0] as ModelLike;
 
 	const pi: PiLike = {
-		registerCommand: (name, opts) => commands.set(name, opts.handler),
+		registerCommand: (name, opts) => {
+			commands.set(name, opts.handler);
+			completions.set(name, opts.getArgumentCompletions);
+		},
 		registerShortcut: () => {},
 		on: () => {},
 		sendMessage: (m) =>
@@ -169,7 +174,7 @@ export function makeFake(): FakeWorld {
 		getContextUsage: () => ({ tokens: 1200, contextWindow: 200_000, percent: 0.6 }),
 	};
 
-	return { pi, ctx, ui, session, calls, commands };
+	return { pi, ctx, ui, session, calls, commands, completions };
 }
 
 export function entriesByType(session: FakeSession, type: string, customType?: string): SessionEntry[] {
