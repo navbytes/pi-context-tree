@@ -18,10 +18,7 @@ describe("extension entry point", () => {
 				t: unknown,
 			) => { render(width: number): string[] } | undefined
 		>();
-		(w.pi as { registerMessageRenderer?: unknown }).registerMessageRenderer = (
-			customType: string,
-			renderer: never,
-		) => {
+		(w.pi as { registerMessageRenderer?: unknown }).registerMessageRenderer = (customType: string, renderer: never) => {
 			renderers.set(customType, renderer);
 		};
 

@@ -59,10 +59,7 @@ describe("/branch model autocomplete (remembered-ctx bridge)", () => {
 		rememberCtx(ctx); // ambient events stash the ctx — completions have no ctx param in pi 0.79.1
 		const complete = completions.get("branch");
 		expect(complete?.("fix-x ha")?.map((c) => c.value)).toEqual(["anthropic/haiku-4.5"]);
-		expect(complete?.("fix-x anthropic/")?.map((c) => c.value)).toEqual([
-			"anthropic/opus-4.8",
-			"anthropic/haiku-4.5",
-		]);
+		expect(complete?.("fix-x anthropic/")?.map((c) => c.value)).toEqual(["anthropic/opus-4.8", "anthropic/haiku-4.5"]);
 	});
 
 	it("offers nothing for the name argument or when no ctx has been seen", () => {
