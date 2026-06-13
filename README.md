@@ -11,7 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/node-%E2%89%A522.19-339933?logo=node.js&logoColor=white" alt="Node >= 22.19">
   <img src="https://img.shields.io/badge/pi-0.79.1-8957e5" alt="pi 0.79.1">
-  <img src="https://img.shields.io/badge/tests-161%20passing-2ea043" alt="161 tests passing">
+  <img src="https://img.shields.io/badge/tests-164%20passing-2ea043" alt="164 tests passing">
   <img src="https://img.shields.io/badge/built%20with-TDD-ff69b4" alt="Built with TDD">
 </p>
 
@@ -55,8 +55,7 @@ pi-context-tree treats the session like a **git repo**: the trunk is `master`, s
 ## Demo
 
 <p align="center">
-  <!-- TODO: replace docs/assets/demo-placeholder.svg with the recorded docs/assets/demo.gif, then delete the placeholder. See docs/RECORDING.md. -->
-  <img src="docs/assets/demo-placeholder.svg" alt="pi-context-tree demo — recording coming soon" width="820">
+  <img src="docs/assets/demo.gif" alt="pi-context-tree demo — branch a side-quest, squash it back as a decision record, then crop a fat tool result from the panel" width="820">
 </p>
 
 The full-screen context panel — the tree with token costs, branch status colors, the health gauge, and one-keystroke actions:
