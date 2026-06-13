@@ -22,22 +22,22 @@
   <text x="92" y="33" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" fill="#8b949e">pi — project ⎇ fix-flaky-test</text>
 
   <!-- title -->
-  <text x="40" y="104" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="42" font-weight="700" fill="#e6edf3">pi-context-tree</text>
-  <text x="42" y="150" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" fill="#8b949e">Git for your agent's context. <tspan fill="#3fb950">/branch</tspan> · <tspan fill="#58a6ff">/merge</tspan> · <tspan fill="#f0883e">/crop</tspan> + a context panel for pi</text>
+  <text x="30" y="104" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="42" font-weight="700" fill="#e6edf3">pi-context-tree</text>
+  <text x="32" y="150" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" fill="#8b949e">Git for your agent's context. <tspan fill="#3fb950">/branch</tspan> · <tspan fill="#58a6ff">/merge</tspan> · <tspan fill="#f0883e">/crop</tspan> + a context panel for pi</text>
 
   <!-- mini tree -->
   <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14">
-    <text x="42" y="184" fill="#8b949e">●</text>
-    <text x="62" y="184" fill="#e6edf3">user: refactor the parser</text>
-    <text x="58" y="206" fill="#58a6ff">◆</text>
-    <text x="78" y="206" fill="#e6edf3">decision: extract streaming reader  <tspan fill="#3f6">✓ human-confirmed</tspan></text>
-    <text x="58" y="228" fill="#8b949e">⎇</text>
-    <text x="78" y="228" fill="#d29922">branch fix-flaky-test  </text>
-    <text x="270" y="228" fill="#f0883e">✂ cropped: read_file ×3, ~41k tokens</text>
+    <text x="32" y="184" fill="#8b949e">●</text>
+    <text x="52" y="184" fill="#e6edf3">user: refactor the parser</text>
+    <text x="48" y="206" fill="#58a6ff">◆</text>
+    <text x="68" y="206" fill="#e6edf3">decision: extract streaming reader  <tspan fill="#3f6">✓ human-confirmed</tspan></text>
+    <text x="48" y="228" fill="#8b949e">⎇</text>
+    <text x="68" y="228" fill="#d29922">branch fix-flaky-test  </text>
+    <text x="260" y="228" fill="#f0883e">✂ cropped: read_file ×3, ~41k tokens</text>
   </g>
 
   <!-- context gauge -->
-  <g transform="translate(560,80)">
+  <g transform="translate(575,80)">
     <text x="0" y="-8" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#8b949e">CONTEXT HEALTH</text>
     <rect x="0" y="0" width="300" height="16" rx="8" fill="#21262d"/>
     <rect x="0" y="0" width="78" height="16" rx="8" fill="url(#health)"/>
@@ -48,5 +48,5 @@
     <text x="0" y="36" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#3fb950">12% · healthy (5–15% band)</text>
   </g>
 
-  <text x="560" y="228" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#6e7681">small · fresh · relevant — never /compact</text>
+  <text x="575" y="228" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#6e7681">small · fresh · relevant — never /compact</text>
 </svg>
