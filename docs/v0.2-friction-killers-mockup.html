@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>pi-context-tree — v0.2 friction-killers mockup</title>
+<style>
+  :root{
+    --bg:#08090b; --term:#0b0d10; --chrome:#16181d; --line:#23262d; --card:#0e1014;
+    --txt:#c9ccd1; --dim:#5d6470; --faint:#3a3f49;
+    --green:#5af78e; --low:#7ec96a; --cyan:#5fd7d7; --yellow:#e5c07b;
+    --orange:#ff9e3b; --red:#f4647d; --blue:#6ab0f3; --mauve:#c792ea;
+    --mono:"JetBrains Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:var(--mono);font-size:13px;
+       line-height:1.5;padding:26px 16px 60px;max-width:980px;margin:0 auto}
+  h1{font-size:19px;font-weight:600;color:#fff;letter-spacing:.01em}
+  .sub{color:var(--dim);font-size:12.5px;margin:6px 0 4px}
+  .banner{margin:14px 0 26px;padding:9px 13px;border:1px solid #4a3b1a;background:#1a1407;
+       border-radius:7px;color:var(--orange);font-size:12px}
+  .banner b{color:#ffce7a}
+  .frame{background:var(--card);border:1px solid var(--line);border-radius:10px;
+       padding:15px 16px 16px;margin:16px 0}
+  .lbl{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:11px}
+  .lbl .n{color:var(--faint);font-size:12px}
+  .lbl h2{font-size:14.5px;font-weight:600;color:var(--txt)}
+  .tag{font-size:10px;letter-spacing:.06em;padding:1px 7px;border-radius:4px;border:1px solid;font-weight:600}
+  .tag.high{color:var(--green);border-color:#2c6b45}
+  .tag.med{color:var(--yellow);border-color:#5a4d22}
+  .tag.blocked{color:var(--red);border-color:#5e2330}
+  .term{background:var(--term);border:1px solid var(--line);border-radius:7px;
+       padding:11px 13px;white-space:pre;overflow-x:auto;font-size:12.5px;line-height:1.55}
+  .term + .term{margin-top:9px}
+  .note{color:var(--dim);font-size:12px;margin-top:11px}
+  .note b{color:var(--txt);font-weight:600}
+  .note .now{color:var(--red)} .note .new{color:var(--green)}
+  .cap{color:var(--faint);font-size:11px;letter-spacing:.05em;margin:0 0 5px;text-transform:uppercase}
+
+  /* tui tokens */
+  .dim{color:var(--dim)} .faint{color:var(--faint)} .mauve{color:var(--mauve)}
+  .cyan{color:var(--cyan)} .yellow{color:var(--yellow)} .blue{color:var(--blue)}
+  .b-low{color:var(--low)} .b-healthy{color:var(--green)} .b-filling{color:var(--orange)} .b-red{color:var(--red)}
+  .up{color:var(--orange);font-weight:700}
+  .src{color:var(--cyan)}
+  .key{color:var(--green);font-weight:600}
+  .strike{text-decoration:line-through;opacity:.6}
+  .box{color:var(--faint)}
+  .u{color:var(--cyan)} .a{color:#b8bfc7} .t{color:#9aa3ad} .dec{color:var(--mauve)}
+  a{color:var(--blue)}
+</style>
+</head>
+<body>
+
+<h1>pi-context-tree — v0.2 "friction-killers"</h1>
+<div class="sub">Mockups for review · pairs with <a href="DESIGN-v0.2-friction-killers.md">DESIGN-v0.2-friction-killers.md</a></div>
+<div class="banner"><b>⚠ Proposal — nothing here is built yet.</b> This is the mockup-before-UI review. Green band-text = proposed; <span class="strike">struck red</span> = today's behavior being replaced. No code until you sign off.</div>
+
+
+<!-- ============ 1. GAUGE HONESTY ============ -->
+<div class="frame">
+  <div class="lbl"><span class="n">1</span><h2>Gauge — honest estimate, no fake precision</h2><span class="tag high">HIGH</span></div>
+
+  <div class="cap">today — three sig figs of a chars/4 guess</div>
+  <div class="term"> <span class="dim strike">CONTEXT</span> <span class="b-low strike">█</span><span class="faint strike">┊░░░░░░░░░░░░░░░░░░░░░░░░░░░</span> <span class="b-low strike">~0.1% low</span>   <span class="red">← guessing, but looks measured</span></div>
+
+  <div class="cap" style="margin-top:13px">proposed — estimated state says so; band only, coarse tokens</div>
+  <div class="term"> <span class="dim">CONTEXT</span> <span class="faint">░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░</span> <span class="dim">~30k est ·</span> <span class="b-low">warming up</span></div>
+
+  <div class="cap" style="margin-top:13px">proposed — after pi reports real usage, exact %</div>
+  <div class="term"> <span class="dim">CONTEXT</span> <span class="b-filling">███████████</span><span class="box">┊</span><span class="faint">░░░░░░░░░░░░░░░░░░</span> <span class="b-filling">38.2% filling</span></div>
+
+  <div class="note"><span class="now">now:</span> <code>~0.1% low</code> the instant a session loads (pi reports 0 tokens → chars/4 fallback). <span class="new">proposed:</span> while estimated, drop the point-percent entirely — show the <b>band word + a coarse <code>~Nk est</code></b>; swap to the exact figure only once pi's real count arrives.</div>
+</div>
+
+
+<!-- ============ 2. TREND + JUMP ATTRIBUTION ============ -->
+<div class="frame">
+  <div class="lbl"><span class="n">2</span><h2>Gauge — trend ▲ &amp; jump attribution</h2><span class="tag high">HIGH</span></div>
+
+  <div class="cap">prompt bar, right after a fat tool result lands</div>
+  <div class="term"> <span class="dim">CONTEXT</span> <span class="b-filling">███████████</span><span class="box">┊</span><span class="faint">░░░░░░░░░░░░░░░░░░</span> <span class="b-filling">38% filling</span> <span class="up">▲ +24%</span> <span class="dim">(</span><span class="src">chrome.snapshot</span><span class="dim">)</span>
+<span class="box">╭──────────────────────────────────────────────────────────╮</span>
+<span class="box">│</span> <span class="dim">›</span> <span class="box">                                                        │</span>
+<span class="box">╰──────────────────────────────────────────────────────────╯</span></div>
+
+  <div class="cap" style="margin-top:13px">footer status — same signal, one line</div>
+  <div class="term"> <span class="mauve">⎇ trunk</span> <span class="dim">·</span> <span class="b-filling">ctx 38% filling</span> <span class="up">▲ +24%</span> <span class="dim">(</span><span class="src">chrome.snapshot</span><span class="dim">)</span></div>
+
+  <div class="note"><b>Trend:</b> <code>▲</code> appears only when context rose ≥ ~3 pts since last turn (falling = silent). <b>Attribution:</b> on a ≥ ~5 pt jump, name the consumer bucket that grew most — computed from the existing <code>aggregateConsumers()</code>. "Tells me <i>what</i> to crop, right where I'll see it." Thresholds live in code — no config knob.</div>
+</div>
+
+
+<!-- ============ 3. /undo ============ -->
+<div class="frame">
+  <div class="lbl"><span class="n">3</span><h2><code>/undo</code> — one-key revert of the last mutation</h2><span class="tag high">HIGH</span></div>
+
+  <div class="cap">after a squash you regret — type /undo</div>
+  <div class="term"> <span class="dim">›</span> <span class="txt">/undo</span>
+
+ <span class="green">↩ undo:</span> re-open <span class="b-healthy">'fix-flaky-test'</span> at its leaf?
+   <span class="dim">· the squash decision record stays in history (off-path, not deleted)</span>
+   <span class="dim">· restores the branch's 20 turns to the active context</span>
+   <span class="key">[y]</span><span class="dim">es</span>  <span class="dim">[N]o</span></div>
+
+  <div class="cap" style="margin-top:13px">what it reverts, by last mutation type</div>
+  <div class="term"> <span class="dec">squash / discard</span>  <span class="dim">→ re-open the branch (record + close marker kept, off-path)</span>
+ <span class="t">crop result/turn</span>  <span class="dim">→ pre-crop branch — the fat result / Q&amp;A turn returns</span>
+ <span class="b-healthy">/branch</span>           <span class="dim">→ back to the parent; fork left dangling</span></div>
+
+  <div class="note"><b>Append-only is preserved — nothing is deleted.</b> Each mutation already branches at an anchor; <code>/undo</code> is <b>guided navigation back to that anchor</b> (the recovery that's a tree-spelunking chore today, as one keystroke). <b>Open question for you:</b> last-mutation-only (my pick) vs a small undo stack.</div>
+</div>
+
+
+<!-- ============ 4. BARE /merge = squash ============ -->
+<div class="frame">
+  <div class="lbl"><span class="n">4</span><h2>Bare <code>/merge</code> = squash · selector becomes <code>--pick</code></h2><span class="tag high">HIGH</span></div>
+
+  <div class="cap">today — every /merge pays the "pick a mode" tax</div>
+  <div class="term"> <span class="dim">›</span> <span class="txt">/merge</span>
+ <span class="dim strike">? Merge branch 'fix-flaky-test'  (use ↑↓)</span>
+ <span class="strike">❯ squash — draft a decision record…</span>
+ <span class="strike">  squash --no-llm …   discard …   tournament …</span></div>
+
+  <div class="cap" style="margin-top:13px">proposed — bare /merge goes straight to the gate</div>
+  <div class="term"> <span class="dim">›</span> <span class="txt">/merge</span>
+ <span class="dim">drafting decision record with</span> <span class="cyan">haiku-4.5</span><span class="dim">… opens your editor:</span>
+ <span class="box">┌─ Decision record — save to confirm · quit empty to abort ──┐</span>
+ <span class="box">│</span> <span class="dec">## Decision: fix-flaky-test</span>                                <span class="box">│</span>
+ <span class="box">│</span> <span class="t">**Outcome:** retry wrapper removed; root cause was a…</span>     <span class="box">│</span>
+ <span class="box">│</span> <span class="dim">**Why:** …</span>                                              <span class="box">│</span>
+ <span class="box">└────────────────────────────────────────────────────────────┘</span></div>
+
+  <div class="note"><span class="now">now:</span> bare <code>/merge</code> → selector. <span class="new">proposed:</span> bare <code>/merge</code> → <b>squash</b> directly. <code>/merge --pick</code> reopens the menu; <code>--discard</code> / <code>--tournament</code> / <code>--no-llm</code> unchanged. <b>The editor gate is fully intact</b> — nothing lands until you save.</div>
+</div>
+
+
+<!-- ============ 5. NUDGE CTA (blocked one-key) ============ -->
+<div class="frame">
+  <div class="lbl"><span class="n">5</span><h2>Red-nudge → one call to action</h2><span class="tag high">HIGH</span><span class="tag blocked">PART pi-BLOCKED</span></div>
+
+  <div class="cap">ships now — actionable nudge text (was a generic suggestion)</div>
+  <div class="term"> <span class="orange">⚠</span> <span class="txt">context 41%</span> <span class="up">▲</span> <span class="dim">— biggest:</span> <span class="src">chrome.snapshot ~61k</span><span class="dim">. type</span> <span class="key">/merge</span> <span class="dim">to squash, or</span> <span class="key">/crop --top</span></div>
+
+  <div class="note"><b>The literal one-keystroke from the nudge is blocked by pi 0.79.1</b> — invoking a command from an ambient surface needs command context pi doesn't give shortcuts/widgets (the same wall that makes <code>Ctrl+Q</code> view-only). What ships now is the <b>pointed CTA</b> (names the cost + the exact command). The one-key lands when pi exposes a command-invoke API — tracked with the <code>Ctrl+Q</code> roadmap item.</div>
+</div>
+
+
+<!-- ============ 6. /crop --top ============ -->
+<div class="frame">
+  <div class="lbl"><span class="n">6</span><h2><code>/crop --top</code> — crop the biggest unprotected result</h2><span class="tag med">MED</span></div>
+
+  <div class="term"> <span class="dim">›</span> <span class="txt">/crop --top</span>
+
+ <span class="green">✂</span> <span class="src">chrome.snapshot</span> <span class="yellow">~61k</span> <span class="dim">(2 entries) · biggest unprotected result</span>
+   <span class="dim">→ stub it? original stays recoverable on the previous branch</span>
+   <span class="key">[y]</span><span class="dim">es</span>  <span class="dim">[N]o</span>  <span class="dim">[p] open the panel instead</span></div>
+
+  <div class="note"><span class="now">vs:</span> the blind <code>--auto</code> rules sweep he'd never fully trust. <span class="new">this:</span> one named target, one decision. Reuses <code>aggregateConsumers()</code> + the crop planner + existing latest-per-tool / decision-record protections.</div>
+</div>
+
+
+<!-- ============ 7. /decisions --export ============ -->
+<div class="frame">
+  <div class="lbl"><span class="n">7</span><h2><code>/decisions --export</code> — portable markdown</h2><span class="tag med">MED</span></div>
+
+  <div class="term"> <span class="dim">›</span> <span class="txt">/decisions --export decisions.md</span>
+ <span class="dim">wrote 3 decision records →</span> <span class="blue">decisions.md</span> <span class="dim">(paste into a PR / ADR / Slack)</span></div>
+
+  <div class="cap" style="margin-top:11px">decisions.md</div>
+  <div class="term"><span class="mauve"># Decision records — myproject</span>
+
+<span class="txt">## fix-flaky-test</span> <span class="dim">· 2026-06-13 · drafted by haiku-4.5 · confirmed ✓</span>
+<span class="dim">**Outcome:** removed the retry wrapper; root cause was a shared tmpdir.</span>
+<span class="dim">**Why:** the flake only reproduced under parallel runs…</span>
+
+<span class="txt">## storage-layer</span> <span class="dim">· 2026-06-12 · confirmed ✓</span>
+<span class="dim">**Outcome:** chrome.storage.session over IndexedDB for the importer.</span></div>
+
+  <div class="note">A pure serializer over records already in the session — no new state. "90% of the collab value at 5% of the cost."</div>
+</div>
+
+<div class="sub" style="margin-top:24px">Sequencing &amp; the explicit non-goals (gate stays sacred, no dashboard / DSL / auto-organize) are in the <a href="DESIGN-v0.2-friction-killers.md">design note</a>.</div>
+
+</body>
+</html>
