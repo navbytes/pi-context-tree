@@ -1,6 +1,6 @@
 {
 	"name": "@pi-context-tree/core",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"type": "module",
 	"description": "pi-independent session parsing, tree/forest model, token estimation, ctree status, crop planning, decision records",
 	"main": "./dist/index.js",
@@ -23,5 +23,9 @@
 	},
 	"engines": {
 		"node": ">=22.19.0"
+	},
+	"license": "MIT",
+	"publishConfig": {
+		"access": "public"
 	}
 }
