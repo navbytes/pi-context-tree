@@ -80,16 +80,16 @@ The full-screen context panel — the tree with token costs, branch status color
 
 ## Requirements
 
-- [**pi**](https://github.com/earendil-works/pi) (the coding agent) — pinned to `@earendil-works/*@0.79.1`.
+- [**pi**](https://github.com/earendil-works/pi) (the coding agent) — built and tested against `@earendil-works/*@0.79.1` (newer pi usually works too; see [Status](#status--compatibility)).
 - **Node.js ≥ 22.19**.
 
 `pi install` handles everything else; pi provides its core packages to the extension at runtime.
 
 ## Status & compatibility
 
-**Maturity:** **v0.1.0 — the first public release.** Every command and panel view works against the pinned pi, covered by golden and real-TUI tests (see [Development](#development)). Bug reports and feedback are very welcome.
+**Maturity:** **v0.1.0 — the first public release.** Every command and panel view works against pi `0.79.1`, covered by golden and real-TUI tests (see [Development](#development)). Bug reports and feedback are very welcome.
 
-**pi version:** pinned to `@earendil-works/*@0.79.1`. A non-blocking CI lane runs the full integration suite against `pi@latest` to catch API drift early — but newer pi (0.80+) isn't officially supported yet. If something breaks on a newer pi, please [open an issue](https://github.com/navbytes/pi-context-tree/issues).
+**pi version:** built and tested against `@earendil-works/*@0.79.1`. The extension declares a *permissive* peer dependency on pi, so it also loads against newer pi — **a new pi release doesn't require an update**, and most just keep working. A non-blocking CI lane runs the full integration suite against `pi@latest` on every push as an early warning for breaking changes; if it (or your own session) breaks on a newer pi, please [open an issue](https://github.com/navbytes/pi-context-tree/issues).
 
 ## Install
 

@@ -1,0 +1,24 @@
+# Dependabot. Security patches are auto-applied via the repo's "Dependabot
+# security updates" setting; this file adds routine weekly version bumps.
+# pi (@earendil-works/*) and our own workspace packages (@pi-context-tree/*) are
+# pinned/managed deliberately (see the README's Status section), so they're
+# excluded from automatic bumps.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "@earendil-works/*"
+      - dependency-name: "@pi-context-tree/*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
