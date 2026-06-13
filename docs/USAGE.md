@@ -1,6 +1,6 @@
 # Using pi-context-tree
 
-A hands-on guide. For the full feature inventory see [APP-FEATURES.md](APP-FEATURES.md); for the why see [PRESENTATION-FEATURES.md](PRESENTATION-FEATURES.md).
+A hands-on guide. For the feature list see the [README](../README.md#features); for the rationale see the [spec](pi-context-tree-spec.md).
 
 ---
 

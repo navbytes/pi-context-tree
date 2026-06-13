@@ -1,6 +1,6 @@
 # Contributing to pi-context-tree
 
-Thanks for your interest! This project is a [pi](https://github.com/earendil-works/pi) package: a TypeScript ESM monorepo (`core` · `tui` · `extension` · `pitree`) built with strict TDD. Please read [CLAUDE.md](CLAUDE.md) and [docs/HANDOVER.md](docs/HANDOVER.md) before a substantial change — they capture the load-bearing invariants.
+Thanks for your interest! This project is a [pi](https://github.com/earendil-works/pi) package: a TypeScript ESM monorepo (`core` · `tui` · `extension` · `pitree`) built with strict TDD. Please read the [architecture doc](docs/pi-context-tree-architecture.md) and [spec](docs/pi-context-tree-spec.md) before a substantial change — they capture the load-bearing invariants.
 
 ## Dev loop
 

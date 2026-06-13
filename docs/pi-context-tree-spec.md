@@ -2,7 +2,7 @@
 
 **Version:** 0.3
 **Owner:** Naveen
-**Target:** A coding agent (Claude Code / pi) building this autonomously
+**Target platform:** pi (the earendil-works coding agent)
 **Status:** Ready for implementation
 **v0.3 changes (research pass, 2026-06-12):** pinned pi's canonical repo to `earendil-works/pi-mono` (badlogic URLs redirect); F2.5 now targets the verified `BranchSummaryEntry` summarize-on-leave mechanism; decision records gain an **Assumptions** field (Forky-inspired) and a ~1–2k-token size guideline (Anthropic's distilled-summary envelope); fork labels documented as doubling as named checkpoints (F1.6); added Part 3 (prior art & evidence); the 5–15% band is explicitly an opinionated heuristic.
 **v0.2 changes:** Rich TUI panel is now the primary management surface (launchable from inside pi); adopted `/branch` `/merge` `/crop` vocabulary; added discard-merge, interactive crop, title-bar branding, context gauge with health band, context-consumer stats; web dashboard demoted to v2.
@@ -20,7 +20,7 @@ This tool exists because attention is a fixed budget: softmax forces all attenti
 
 Pi already provides the substrate: tree-structured sessions (`id`/`parentId`), `/tree` navigation with an optional summarize-on-leave flow, `/fork`, `/clone`, compaction entries, an extension API, and the pi-tui library. This project is the opinionated workflow + rich UI layer on top.
 
-**Evidence & positioning (use in user-facing docs).** Cite the documented failure modes this tool prevents: **"context rot"** (Chroma 2025, adopted by Anthropic's context-engineering guidance) — degradation with input length is real and non-uniform even on minimal tasks; **NoLiMa** (ICML 2025) — of 13 models claiming ≥128k windows, 11 fall below 50% of their short-context baseline by 32k tokens, with effective lengths ≤8k (best model) and ≤2k (most); **LongMemEval** — every model family tested scores higher on a focused prompt than on the same task buried in ~113k tokens, i.e. pruning is a *quality* feature, and it assumes a relevance oracle — which is exactly what the human confirm/edit gate provides; **"logical context poisoning"** (Conversation Tree Architecture, arXiv 2603.21278) — the literature's name for flat append-only context degrading multi-thread sessions. **The 5–15% band is this tool's own opinionated heuristic** — motivated by the above, prescribed by none of it; docs must present it as a design choice, not a measured threshold.
+**Evidence & positioning (use in user-facing docs).** Cite the documented failure modes this tool prevents: **"context rot"** (Chroma 2025, adopted by Anthropic's context-engineering guidance) — degradation with input length is real and non-uniform even on minimal tasks; **NoLiMa** (ICML 2025) — of 13 models claiming ≥128k windows, 11 fall below 50% of their short-context baseline by 32k tokens, with effective lengths ≤8k (best model) and ≤2k (most); **LongMemEval** — every model family tested scores higher on a focused prompt than on the same task buried in ~113k tokens, i.e. pruning is a *quality* feature, and it assumes a relevance oracle — which is exactly what the human confirm/edit gate provides. **The 5–15% band is this tool's own opinionated heuristic** — motivated by the above, prescribed by none of it; docs must present it as a design choice, not a measured threshold.
 
 ---
 
@@ -218,7 +218,7 @@ As v0.1 (append-only; waitForIdle; leaf-id recheck; actionable errors; no half-w
 
 ## 8. Build environment
 
-Unchanged from v0.1: the building agent needs **no** pre-existing local pi and **no API keys** — pi installs from npm into the dev environment; all automated tests use fixtures + mock LLM. The agent must begin by reading the pinned pi package's docs and the `/tree`/compaction/footer-extension source. Final acceptance (Scenario A+E with a real key) runs on Naveen's laptop.
+No pre-existing local pi and **no API keys** are required for development — pi installs from npm into the dev environment, and all automated tests use fixtures + a mock LLM. Final acceptance (Scenarios A + E against a real model and key) is a manual step.
 
 ## 9. Milestones
 
@@ -233,9 +233,9 @@ Unchanged from v0.1: the building agent needs **no** pre-existing local pi and *
 | M7 | Tournament + `/decisions` + Consumers view | golden files; one combined record |
 | M8 | `pitree` + `pitree ui` (read-only forest) | runs on fixtures; zero-write assertion |
 
-## 10. Out of scope for the building agent
+## 10. Out of scope (v1)
 
-No auto-squash/auto-crop heuristics firing without invocation; no writes from pitree/standalone panel; no Claude Code; no web UI; no JSONL line mutation; no invented pi APIs — if an expected capability is missing in the pinned version (notably overlay hosting), stop at the M2 gate and report with options rather than reverse-engineering private internals.
+No auto-squash/auto-crop heuristics firing without invocation; no writes from pitree/standalone panel; no Claude Code platform support; no web UI; no JSONL line mutation; no invented pi APIs — if an expected capability is missing in the pinned version (notably overlay hosting), the M2 spike records a fallback rather than reverse-engineering internals.
 
 ---
 
@@ -248,6 +248,5 @@ No auto-squash/auto-crop heuristics firing without invocation; no writes from pi
 - **Loom** (`socketteer/loom`): expand/collapse and zoom-out-to-global-view as first-class tree navigation; merge-with-parent as a node operation. Candidate panel niceties post-M5.
 - **SillyTavern Timelines**: "a checkpoint is just a named branch" (adopted as F1.6); colored-ring rendering for special nodes; tree reconstruction via content-dedup at equal depth (only relevant if forest ever ingests non-pi logs — pi has real `id`/`parentId`).
 - **LibreChat fork scopes** (visible path / + related branches / everything): scope-selector pattern to reuse if branch-from-node or `/export` grows options (v2).
-- **Conversation Tree Architecture** (arXiv 2603.21278; unreviewed 6-page preprint, no empirical eval): names "logical context poisoning"; formalizes context flowing downstream on branch and upstream on merge; explicitly lists *condensation granularity* as an open problem — the human-confirmed squash is the literature's named gap. Positioning language for the README.
 
 **Confirmed novel (nothing surveyed does these):** human-confirmed squash-merge into durable decision records; interactive user-directed crop of live context; per-entry token costs in a tree view plus a health-band gauge; cross-project forest with dangling-branch detection. Survey bound: Cursor/Codex CLI/Aider/opencode/goose/amp and lazygit/tig/k9s idioms produced no verified claims; amp's "handoff" feature is conceptually adjacent to decision records and unexamined.

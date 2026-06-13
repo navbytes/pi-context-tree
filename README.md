@@ -231,12 +231,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full conventions and the dev loop
 - Mutating actions from `Ctrl+Q` once pi exposes a command-invoke API (view-only today).
 - v2 (out of v1 scope): web dashboard, RPC-attach mutation for the standalone panel, scope-selector export, global zoom-out view.
 
-The full adoption/release plan and backlog live in [docs/ADOPTION.md](docs/ADOPTION.md) and [docs/HANDOVER.md](docs/HANDOVER.md).
-
 ## Documentation
 
 - [**USAGE.md**](docs/USAGE.md) — hands-on guide (install, the core loop, commands by example, panel keys, recipes). **Start here.**
-- [APP-FEATURES.md](docs/APP-FEATURES.md) — full feature inventory.
 - [pi-context-tree-spec.md](docs/pi-context-tree-spec.md) — PRD/TRD v0.3 + the evidence/positioning section.
 - [pi-context-tree-architecture.md](docs/pi-context-tree-architecture.md) — verified pi APIs (file:line) + design decisions.
 - [pi-context-tree-mockup.html](docs/pi-context-tree-mockup.html) — interactive TUI mockup (open in a browser).

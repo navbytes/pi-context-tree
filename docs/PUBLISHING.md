@@ -1,7 +1,6 @@
 # Publishing & release runbook
 
 The deferred end-steps (going public + npm), captured so they're one pass when you're ready.
-Day-to-day adoption work and the prioritized plan live in [ADOPTION.md](ADOPTION.md).
 
 ## 0. Prerequisites
 - Repo is **public** (GitHub → Settings → General → Change visibility).
@@ -53,7 +52,7 @@ The gallery indexes npm packages with the `pi-package` keyword (already set). To
    (`image`: PNG/JPEG/GIF/WebP · `video`: MP4 only.)
 
 ## 4. Announce
-- PR the package into the community extension lists; post in the pi Discord. Copy-paste drafts are in [ADOPTION.md](ADOPTION.md#appendix--copy-paste-drafts).
+- PR the package into the community extension lists; post in the pi Discord with a link to the demo.
 
 ## Versioning
 [SemVer](https://semver.org/). Bump versions + update [CHANGELOG.md](../CHANGELOG.md) in the same commit; tag `vX.Y.Z` after merge to `main`.

@@ -1,6 +1,6 @@
 # pi-context-tree — Architecture & Implementation Notes
 
-**Companion to:** [pi-context-tree-spec.md](pi-context-tree-spec.md) v0.3 · **Pinned pi:** `@earendil-works/pi-coding-agent@0.79.1` + `@earendil-works/pi-tui@0.79.1` (repo verified at `/tmp/pi-mono`, matches local install)
+**Companion to:** [pi-context-tree-spec.md](pi-context-tree-spec.md) v0.3 · **Pinned pi:** `@earendil-works/pi-coding-agent@0.79.1` + `@earendil-works/pi-tui@0.79.1`
 **Status:** Reviewed source; all API claims below carry file references into the pinned repo.
 
 ---
