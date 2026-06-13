@@ -19,7 +19,7 @@ export function forgetCtx(): void {
 }
 
 /** Completions for `/branch <name> <model…>` — second argument only. */
-export function modelCompletions(argumentPrefix: string): { value: string; label?: string }[] | null {
+export function modelCompletions(argumentPrefix: string): { value: string; label: string }[] | null {
 	const parts = argumentPrefix.split(/\s+/);
 	if (parts.length < 2) return null;
 	const prefix = (parts[parts.length - 1] ?? "").toLowerCase();
@@ -28,6 +28,6 @@ export function modelCompletions(argumentPrefix: string): { value: string; label
 	const hits = models
 		.map((m) => ({ ref: `${m.provider}/${m.id}`, id: m.id.toLowerCase() }))
 		.filter(({ ref, id }) => ref.toLowerCase().startsWith(prefix) || id.startsWith(prefix))
-		.map(({ ref }) => ({ value: ref }));
+		.map(({ ref }) => ({ value: ref, label: ref }));
 	return hits.length ? hits : null;
 }

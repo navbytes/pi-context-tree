@@ -55,7 +55,9 @@ export interface PiLike {
 		options: {
 			description?: string;
 			handler: (args: string, ctx: CmdCtxLike) => Promise<void> | void;
-			getArgumentCompletions?: (prefix: string) => { value: string; label?: string }[] | null;
+			// pi-tui's AutocompleteItem requires BOTH value and label — a missing label crashes
+			// the TUI autocomplete (undefined.endsWith). Always include label.
+			getArgumentCompletions?: (prefix: string) => { value: string; label: string }[] | null;
 		},
 	): void;
 	registerShortcut?(

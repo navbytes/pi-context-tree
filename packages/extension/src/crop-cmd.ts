@@ -160,7 +160,7 @@ export function registerCrop(pi: PiLike): void {
 			const flags = ["--auto", "--apply", "--dry-run", "--min-tokens", "--older-than", "--keep"];
 			const last = prefix.split(/\s+/).pop() ?? "";
 			const hits = flags.filter((f) => f.startsWith(last));
-			return hits.length ? hits.map((value) => ({ value })) : null;
+			return hits.length ? hits.map((value) => ({ value, label: value })) : null;
 		},
 	});
 }

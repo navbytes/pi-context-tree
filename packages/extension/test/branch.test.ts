@@ -60,6 +60,8 @@ describe("/branch model autocomplete (remembered-ctx bridge)", () => {
 		const complete = completions.get("branch");
 		expect(complete?.("fix-x ha")?.map((c) => c.value)).toEqual(["anthropic/haiku-4.5"]);
 		expect(complete?.("fix-x anthropic/")?.map((c) => c.value)).toEqual(["anthropic/opus-4.8", "anthropic/haiku-4.5"]);
+		// every item MUST carry a label — pi-tui's autocomplete crashes on a missing one (undefined.endsWith)
+		for (const item of complete?.("fix-x anthropic/") ?? []) expect(typeof item.label).toBe("string");
 	});
 
 	it("offers nothing for the name argument or when no ctx has been seen", () => {
@@ -69,5 +71,24 @@ describe("/branch model autocomplete (remembered-ctx bridge)", () => {
 		const complete = completions.get("branch");
 		expect(complete?.("fix")).toBeNull(); // first arg = branch name, not a model
 		expect(complete?.("fix-x ha")).toBeNull(); // no ctx seen yet
+	});
+});
+
+describe("/merge and /crop flag completions carry a label", () => {
+	it("every flag suggestion has both value and label", async () => {
+		const { pi, completions } = makeFake();
+		const { registerMerge } = await import("../src/merge.ts");
+		const { registerCrop } = await import("../src/crop-cmd.ts");
+		registerMerge(pi, { draft: async () => "" });
+		registerCrop(pi);
+
+		const merge = completions.get("merge")?.("--") ?? [];
+		const crop = completions.get("crop")?.("--") ?? [];
+		expect(merge.length).toBeGreaterThan(0);
+		expect(crop.length).toBeGreaterThan(0);
+		for (const item of [...merge, ...crop]) {
+			expect(item.value, "value present").toBeTruthy();
+			expect(typeof item.label, "label is a string (pi-tui requires it)").toBe("string");
+		}
 	});
 });
