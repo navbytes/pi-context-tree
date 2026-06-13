@@ -83,14 +83,14 @@ Nothing is deleted from disk: the turn moves out of <b>live context</b> via the 
  <span class="u">●</span> <span class="a">user: audit my tabs</span>
  <span class="a">○ assistant: 41 suspendable tabs across 6 windows; importer can batch by window</span>
 
- <span class="drop">[dropped turn: "now suspend the noisy ones" — 4 entries, ~16k, 7c91e04f — recoverable on the previous branch]</span>
+ <span class="drop">[dropped turn — 4 entries, ~16k, recoverable: 7c91e04f]</span>
 
  <span class="u">●</span> <span class="a">user: did the suspend stick after a restart?</span>
  <span class="a">○ assistant: yes — verified after a service-worker cycle</span>
  <span class="u">●</span> <span class="a">user: thanks</span>
  <span class="a">○ assistant: you're welcome</span>
 
- <span class="foot"><span class="dimr">the 16k snapshot turn left context · the question line survives only inside the note (a reference, not a live message) · alternation stays valid</span></span></pre>
+ <span class="foot"><span class="dimr">the 16k snapshot turn left context · the note is label-free (question NOT re-injected) · alternation stays valid</span></span></pre>
 </div>
 
 <div class="legend">
@@ -99,10 +99,10 @@ Nothing is deleted from disk: the turn moves out of <b>live context</b> via the 
   Dropping only the answer would orphan a <span class="q">tool_call</span> from its <span class="q">tool_result</span> and leave a question with no reply — exactly the corruption your friend described.<br><br>
   <b>HOW IT'S APPLIED</b> &nbsp;(identical to <span class="k">/crop</span>, just a turn-sized selection)<br>
   branch at the anchor (parent of the earliest removed turn) → one <span class="k">ctree/crop-tail</span> reconstruction block: survivors verbatim, each removed turn collapsed to a <span class="drop">[dropped turn: …]</span> note → a <span class="k">ctree/crop</span> marker records the removed entry ids + a sha for recovery. <b>The original JSONL is never mutated.</b><br><br>
-  <b>OPEN QUESTIONS FOR YOU</b><br>
-  1. Entry point — a <span class="k">t</span> toggle inside the existing crop panel (turn ⇄ result), or a separate <span class="k">/crop --turns</span> / panel key? <br>
-  2. The drop note — keep it (recoverable, shows what left), or drop silently for a cleaner tail? <br>
-  3. Should turns containing a ◆ decision record be <span class="q">un-removable</span> (protected), since those are durable artifacts?
+  <b>DECISIONS (shipped)</b><br>
+  1. Entry point → a <span class="k">t</span> toggle inside the crop panel (result ⇄ turn). Turn removal is panel-only — a "pick this specific exchange" action, not a bulk rule. <br>
+  2. Drop note → kept, but <b>label-free</b>: <span class="drop">[dropped turn — N entries, ~tokens, recoverable: sha8]</span>. Echoing the question would re-inject what you removed; the readable label lives in the <span class="k">ctree/crop</span> marker for the panel. <br>
+  3. Decision-record turns → protected by construction: a ◆ record is a turn <i>boundary</i>, never a turn member, so it can't be selected or swept up. Bonus: the <span class="q">current/leaf turn</span> is protected too.
 </div>
 </body>
 </html>
