@@ -1,0 +1,49 @@
+# Release: pushing a vX.Y.Z tag runs the gate, then cuts a GitHub Release with
+# notes pulled from CHANGELOG.md. That tag is all a pi user needs:
+#   pi install git:github.com/navbytes/pi-context-tree@vX.Y.Z
+# (npm/gallery publishing is a separate, deliberate step — see the PR that added this.)
+name: release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: write # create the GitHub Release
+
+jobs:
+  release:
+    name: gate + GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+
+      - name: tag must match package.json version
+        run: |
+          PKG="v$(node -p "require('./package.json').version")"
+          if [ "$PKG" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} does not match package.json (${PKG}) — bump the version + CHANGELOG before tagging."
+            exit 1
+          fi
+
+      - run: npm run check
+      # pi is not installed here, so the RPC goldens + PTY walk self-skip; units + build run.
+      # The full integration suite already gated this commit on main's CI.
+      - run: npm test
+
+      - name: build release notes from CHANGELOG
+        run: |
+          node scripts/changelog-section.mjs "${GITHUB_REF_NAME#v}" > RELEASE_NOTES.md
+          echo "----- release notes -----"
+          cat RELEASE_NOTES.md
+
+      - name: create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --notes-file RELEASE_NOTES.md --latest --verify-tag
