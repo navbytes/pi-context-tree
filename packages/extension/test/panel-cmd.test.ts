@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { openPanel, registerPanel } from "../src/panel-cmd.ts";
 import { makeFake } from "./fake-pi.ts";
@@ -143,6 +146,34 @@ describe("openPanel overlay host", () => {
 		registerPanel(w.pi, { draft: async () => "unused" });
 		await w.commands.get("decisions")?.("", w.ctx);
 		expect(w.ui.notes().some((n) => n.includes("no decision records"))).toBe(true);
+	});
+
+	it("/decisions --export writes the trunk records to a markdown file", async () => {
+		const w = makeFake();
+		w.session.user("kickoff");
+		const a = w.session.assistant("plan");
+		w.session.append({
+			type: "custom",
+			customType: "ctree/fork",
+			data: { v: 1, name: "feat-x", parentEntryId: a, trunkModel: "anthropic/opus-4.8", status: "open" },
+		});
+		w.session.append({
+			type: "custom_message",
+			customType: "ctree/decision",
+			content: "## Decision: feat-x\n**Outcome:** shipped the importer.",
+			display: true,
+			details: { v: 1, forkEntryId: "x003", branchName: "feat-x" },
+		});
+		registerPanel(w.pi, { draft: async () => "unused" });
+
+		const out = join(tmpdir(), "ctree-decisions-export.test.md");
+		await w.commands.get("decisions")?.(`--export ${out}`, w.ctx);
+
+		const md = readFileSync(out, "utf8");
+		expect(md).toContain("# Decision records");
+		expect(md).toContain("## Decision: feat-x");
+		expect(md).toContain("shipped the importer");
+		expect(w.ui.notes().some((n) => n.includes("wrote 1 decision record"))).toBe(true);
 	});
 
 	it("falls back to a sane body size when the host exposes no terminal dims", async () => {

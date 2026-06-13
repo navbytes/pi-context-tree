@@ -5,6 +5,8 @@
  * after re-validation (TRD §6).
  */
 
+import { writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
 	type CtreeDecisionDetails,
 	type PanelAction,
@@ -12,6 +14,7 @@ import {
 	type PanelView,
 	SessionTree,
 	decisionsOnPath,
+	exportDecisionsMarkdown,
 	textOfContent,
 } from "@pi-context-tree/core";
 import { ContextPanel } from "@pi-context-tree/tui";
@@ -93,6 +96,27 @@ function notifyDecisions(ctx: CtxLike): void {
 	ctx.ui.notify(lines.join("\n"), "info");
 }
 
+/** /decisions --export [path]: write all trunk decision records to portable markdown. */
+function exportDecisions(ctx: CtxLike, args: string): void {
+	const entries = entriesOf(ctx);
+	const tree = SessionTree.fromEntries(entries);
+	const leafId = leafIdOf(ctx) ?? tree.fileLeafId();
+	const decs = leafId ? decisionsOnPath(tree, leafId) : [];
+	const md = exportDecisionsMarkdown(
+		decs.map((d) => textOfContent(d.content)),
+		projectName(),
+	);
+	const pathArg = args.replace("--export", "").trim().split(/\s+/).filter(Boolean)[0];
+	const outPath = resolve(pathArg || "ctree-decisions.md");
+	try {
+		writeFileSync(outPath, md, "utf8");
+	} catch (err) {
+		ctx.ui.notify(`could not write ${outPath}: ${(err as Error).message}`, "error");
+		return;
+	}
+	ctx.ui.notify(`wrote ${decs.length} decision record${decs.length === 1 ? "" : "s"} → ${outPath}`, "info");
+}
+
 export async function executePanelAction(
 	pi: PiLike,
 	ctx: CtxLike,
@@ -161,13 +185,19 @@ export function registerPanel(pi: PiLike, deps: Deps): void {
 		handler: (ctx) => runPanel(pi, ctx, deps),
 	});
 	pi.registerCommand("decisions", {
-		description: "pi-context-tree: decision records on the current trunk (F7)",
-		handler: async (_args, ctx) => {
+		description: "pi-context-tree: decision records on the current trunk (F7) — --export [path] for portable markdown",
+		handler: async (args, ctx) => {
+			if (args.includes("--export")) {
+				exportDecisions(ctx, args);
+				return;
+			}
 			if (!ctx.ui.custom) {
 				notifyDecisions(ctx);
 				return;
 			}
 			await runPanel(pi, ctx, deps, { initialView: "decisions" });
 		},
+		getArgumentCompletions: (prefix) =>
+			"--export".startsWith(prefix.split(/\s+/).pop() ?? "") ? [{ value: "--export", label: "--export" }] : null,
 	});
 }

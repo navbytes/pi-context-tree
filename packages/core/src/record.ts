@@ -38,3 +38,18 @@ export function renderDecisionRecord(d: DecisionDraft): string {
 	}
 	return `${lines.join("\n")}\n`;
 }
+
+/**
+ * Concatenate confirmed decision records into one portable markdown doc
+ * (/decisions --export — paste into a PR / ADR / Slack). A pure serializer over
+ * records that already exist on the trunk; no new state.
+ */
+export function exportDecisionsMarkdown(records: readonly string[], project?: string): string {
+	const title = `# Decision records${project ? ` — ${project}` : ""}`;
+	const meta = `_${records.length} record${records.length === 1 ? "" : "s"} · exported by pi-context-tree_`;
+	if (records.length === 0) {
+		return `${title}\n\n${meta}\n\n_(none yet — \`/merge\` → squash creates them.)_\n`;
+	}
+	const body = records.map((r) => r.trim()).join("\n\n---\n\n");
+	return `${title}\n\n${meta}\n\n${body}\n`;
+}

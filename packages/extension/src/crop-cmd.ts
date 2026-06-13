@@ -25,6 +25,7 @@ interface CropFlags {
 	auto: boolean;
 	dryRun: boolean;
 	apply: boolean;
+	top: boolean;
 	minTokens?: number;
 	olderThan?: number;
 	keep: string[];
@@ -32,10 +33,11 @@ interface CropFlags {
 
 export function parseCropFlags(args: string): CropFlags {
 	const tokens = args.trim().split(/\s+/).filter(Boolean);
-	const flags: CropFlags = { auto: false, dryRun: false, apply: false, keep: [] };
+	const flags: CropFlags = { auto: false, dryRun: false, apply: false, top: false, keep: [] };
 	for (let i = 0; i < tokens.length; i++) {
 		const t = tokens[i];
 		if (t === "--auto") flags.auto = true;
+		else if (t === "--top") flags.top = true;
 		else if (t === "--dry-run") flags.dryRun = true;
 		else if (t === "--apply") flags.apply = true;
 		else if (t === "--min-tokens") flags.minTokens = Number(tokens[++i]);
@@ -114,6 +116,31 @@ export async function cropHandler(pi: PiLike, ctx: CmdCtxLike, args: string): Pr
 		return;
 	}
 
+	// --top: one inline decision on the single biggest unprotected result (no panel, no rules sweep)
+	if (flags.top) {
+		const unprotected = candidates.filter((c) => !c.protected);
+		if (unprotected.length === 0) {
+			ctx.ui.notify("every candidate is its tool's latest result (protected) — open /crop to double-mark", "info");
+			return;
+		}
+		const top = unprotected.reduce((a, b) => (b.estTokens > a.estTokens ? b : a));
+		const ok = await ctx.ui.confirm(
+			"Crop the biggest result",
+			`✂ ${top.tool}${top.arg ? ` ${top.arg}` : ""} ~${fmtTokens(top.estTokens)} → crop this result? (original stays recoverable)`,
+		);
+		if (!ok) {
+			ctx.ui.notify("crop cancelled — nothing written", "info");
+			return;
+		}
+		const plan = planCrop(state.tree, state.leafId, [top.entryId]);
+		if (flags.dryRun) {
+			notifyDryRun(ctx, plan);
+			return;
+		}
+		await applyCropPlan(pi, ctx, plan);
+		return;
+	}
+
 	if (flags.apply && !flags.auto) {
 		ctx.ui.notify("--apply needs --auto rules (interactive review applies from the panel)", "error");
 		return;
@@ -154,10 +181,11 @@ export async function cropHandler(pi: PiLike, ctx: CmdCtxLike, args: string): Pr
 
 export function registerCrop(pi: PiLike): void {
 	pi.registerCommand("crop", {
-		description: "pi-context-tree: surgically stub out huge tool/MCP results (interactive; --auto --apply --dry-run)",
+		description:
+			"pi-context-tree: surgically stub out huge tool/MCP results (--top for the biggest; interactive; --auto --apply --dry-run)",
 		handler: (args, ctx) => cropHandler(pi, ctx, args),
 		getArgumentCompletions: (prefix) => {
-			const flags = ["--auto", "--apply", "--dry-run", "--min-tokens", "--older-than", "--keep"];
+			const flags = ["--top", "--auto", "--apply", "--dry-run", "--min-tokens", "--older-than", "--keep"];
 			const last = prefix.split(/\s+/).pop() ?? "";
 			const hits = flags.filter((f) => f.startsWith(last));
 			return hits.length ? hits.map((value) => ({ value, label: value })) : null;
