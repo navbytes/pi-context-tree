@@ -32,8 +32,7 @@
 </head>
 <body>
 <h1>Prompt-border health gradient (G1) — mockup for review</h1>
-<div class="sub">The deck's "customise the prompt bar": pi's <b>input-box border</b> takes the context-health color, green→red, so you feel context filling without looking away.
-Reuses pi's own <b>CustomEditor</b> with a band-colored <code>borderColor</code> (bands at 5 / 15 / 40%). The border is the <b>resting</b> color — pi still briefly recolors it for bash / thinking modes.</div>
+<div class="sub"><b>SHIPPED (revised):</b> the deck colors pi's input <i>border</i> by health — but pi owns that border for bash/thinking mode and re-asserts it (proven empirically), so an extension can't take it over cleanly. The shipped realization is a colored <b>CONTEXT gauge bar pinned directly above the prompt</b> (via <code>setWidget</code>) — same always-visible green→red signal, no conflict. The four border frames below show the <i>intent</i>; the real feature renders the gauge bar (see the repo screenshot).</div>
 
 <div class="grid">
   <div class="cell">

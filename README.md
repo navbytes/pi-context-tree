@@ -74,7 +74,9 @@ The full-screen context panel (an overlay over pi). `/decisions` opens it straig
 - In the chat itself, ◆ decision records render as cards (title · date · human-confirmed ✓ · outcome · red ✗ epitaphs).
 
 ### Ambient (outside the panel)
-Footer status `⎇ branch · ctx N% band`, terminal title `project (branch) (pi)` color-hashed per branch, a one-time nudge when context crosses 40%, and a philosophy warning on `/compact` (compaction summarizes lossily — consider `/branch`/`/merge`/`/crop` instead).
+A **context-health gauge bar pinned above the prompt** (`CONTEXT ▓▓░ … N% band`, green→red, band ticks at 5/15/40%) — the deck's "prompt bar shows how full your context is." Plus a footer status `⎇ branch · ctx N% band`, terminal title `project (branch) (pi)` color-hashed per branch, a one-time nudge when context crosses 40%, and a philosophy warning on `/compact`.
+
+> The deck colors pi's input *border* by health; pi owns that border for bash/thinking-mode indication and re-asserts it, so an extension can't color it without fighting pi. The gauge bar (pinned via `setWidget`) is the safe, faithful realization — same always-visible green→red signal, directly above where you type.
 
 ## Develop
 

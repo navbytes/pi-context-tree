@@ -8,11 +8,11 @@
 
 ## ⚠️ What's missing vs the presentation (read this first)
 
-The app implements **every core workflow item in the deck and substantially more**. Only three items differ, and only one is a genuine feature gap:
+The app implements **every core workflow item in the deck and substantially more**. After the G1 work below, only two items differ, and both are deliberately delegated to pi:
 
 | | Presentation item | Status | Detail |
 |---|---|---|---|
-| **G1** | Prompt-bar **border gradient** (green→red on the input box) — deck §"Customise the prompt bar" | ⚠️ **Approximated, not literal** | We show context health as a **footer status** (`⎇ branch · ctx N% band`), the **panel gauge** (band ticks at 5/15/40%), and a **one-time red nudge** at 40%. We do **not** recolor pi's actual prompt-input border. It's *feasible* — pi exposes `ui.setEditorComponent(factory)` whose `EditorTheme` can style borders — but a custom editor must re-handle every input keybinding (escape, ctrl+d, model-switch, autocomplete…), so it was deliberately deferred as high-surface-area for low marginal value over the footer signal. **The only real gap.** |
+| **G1** | Prompt-bar health gradient (green→red) — deck §"Customise the prompt bar" | ✅ **Implemented (as a gauge bar)** | A colored `CONTEXT ▓▓░ … N% band` bar is pinned **directly above the prompt** (via `setWidget`), green→red with band ticks — always-visible context health right where you type. **Note on the literal border:** the deck colors pi's *input border*. We tried it (pi's `CustomEditor` + a band-colored `borderColor`) and proved empirically that pi **owns that border for bash/thinking-mode indication** and re-asserts it on its own triggers — so an extension can't color it by health without losing the race or clobbering pi's mode indicator. The gauge bar is the faithful, conflict-free realization of the same intent. |
 | **G2** | `/export` to view context — deck §"See the context" | 🔵 **pi-native** | The deck pairs `/tree` with `/export`. We replace `/tree` with the richer `/panel`; `/export` (HTML/share) remains pi's own `export_html` and isn't re-added by the extension. No loss — it's one command away. |
 | **G3** | `/reset` — deck demo list | 🔵 **pi-native** | Context reset is pi's own command; the extension doesn't wrap it. |
 
@@ -82,7 +82,7 @@ TDD throughout; 162 tests across core (engine), tui (xterm-headless harness), ex
 | See the context (`/tree`) | ✅ Exceeded | `/panel` = tree + crop + consumers + decisions + inspector |
 | See the context (`/export`) | 🔵 pi-native (G2) | Not re-added |
 | Customise title (hashed color) | ✅ Implemented | `project (branch) (pi)` |
-| Customise prompt bar (border gradient) | ⚠️ Approximated (G1) | Footer status + panel gauge + nudge, not the input-border color |
+| Customise prompt bar (health gradient) | ✅ Implemented (G1) | Colored gauge bar pinned above the prompt; literal input-border is pi-owned (bash/thinking) |
 | `/branch` (label) | ✅ Exceeded | + model tiering + autocomplete |
 | `/merge` (git-merge to label, squash, discard) | ✅ Exceeded | + `--no-llm` + tournament + durable decision records |
 | `/crop` (per-node token estimates) | ✅ Exceeded | + turn mode + `--auto`/`--apply`/`--dry-run` |
@@ -97,4 +97,4 @@ TDD throughout; 162 tests across core (engine), tui (xterm-headless harness), ex
 | — | ➕ Model tiering + trunk restore | not in the deck |
 | — | ➕ Append-only recoverability (sha8, reconstruction) | not in the deck |
 
-**Verdict:** the app covers 100% of the deck's workflow concepts and adds a substantial second layer (tournament, decision records, forest, consumers/inspector, model tiering, recoverability, turn removal). The single genuine gap is **G1 — the literal prompt-bar border gradient** (approximated today; buildable via `setEditorComponent` if you want the exact look). `/export` and `/reset` are deliberately left to pi.
+**Verdict:** the app covers 100% of the deck's workflow concepts and adds a substantial second layer (tournament, decision records, forest, consumers/inspector, model tiering, recoverability, turn removal). The prompt-health signal (G1) ships as a colored gauge bar above the prompt; the literal input-*border* recolor is owned by pi (bash/thinking mode) and can't be cleanly taken over by an extension. `/export` and `/reset` are deliberately left to pi. **No remaining gaps in the deck's intent.**
