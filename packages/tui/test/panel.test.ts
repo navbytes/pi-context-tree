@@ -45,7 +45,7 @@ describe("ContextPanel rendering", () => {
 		expect(text).toContain("pi-context-tree");
 		expect(text).toContain("tabwrangler");
 		expect(text).toContain("⎇ fix-flaky-test");
-		expect(text).toMatch(/\d+(\.\d+)?% (low|healthy|filling|red)/);
+		expect(text).toMatch(/est · (low|healthy|filling|red)/); // honest estimate: band + est, no fake %
 		expect(text).toContain("storage-layer");
 		expect(text).toContain("◀ leaf");
 		expect(text).toContain("← you are here");
