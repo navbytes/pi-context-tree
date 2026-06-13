@@ -87,6 +87,10 @@ describe.skipIf(!PI || !EXPECT)("real pi TUI in a PTY (mockup keymap walk)", () 
 				"pump 3",
 				'send "q"',
 				"pump 2",
+				// real-TUI merge: discard with an inline note — must navigate back without
+				// pi's summarize-on-leave prompt (architecture §11.4) and write the close marker
+				'send "/merge --discard dead end\\r"',
+				"pump 4",
 				'send "\\x03"',
 				"pump 1",
 				'send "\\x03"',
@@ -112,5 +116,18 @@ describe.skipIf(!PI || !EXPECT)("real pi TUI in a PTY (mockup keymap walk)", () 
 		expect(raw, `consumers view never painted${tail}`).toContain("TOKENS BY SOURCE");
 		expect(raw, `decisions view never painted${tail}`).toContain("DECISION RECORDS ON TRUNK");
 		expect(raw, `decision epitaph missing${tail}`).toContain("storage-a — quota");
+
+		// §11.4 in the real TUI: discard navigates back silently and closes the branch
+		expect(raw, `discard notify missing${tail}`).toContain("⎇ discarded fix-flaky-test");
+		expect(raw.toLowerCase(), `summarize-on-leave prompt appeared${tail}`).not.toContain("summarize this branch");
+		const session = readFileSync(sessionFile, "utf8");
+		const close = session
+			.trim()
+			.split("\n")
+			.map((l) => JSON.parse(l) as { customType?: string; data?: { status?: string; note?: string } })
+			.filter((e) => e.customType === "ctree/close")
+			.at(-1); // the fixture seeds an earlier squashed close; the discard appends the last one
+		expect(close?.data?.status, "discard close marker not written to the session file").toBe("discarded");
+		expect(close?.data?.note).toBe("dead end");
 	});
 });
