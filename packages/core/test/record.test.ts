@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderDecisionRecord } from "../src/record.ts";
+import { exportDecisionsMarkdown, renderDecisionRecord } from "../src/record.ts";
 
 describe("renderDecisionRecord", () => {
 	it("renders the full §6 template including Assumptions", () => {
@@ -40,5 +40,26 @@ describe("renderDecisionRecord", () => {
 		expect(md).not.toContain("Rejected alternatives");
 		expect(md).toContain("**Changes:** none");
 		expect(md.startsWith("## Decision: tiny\n")).toBe(true);
+	});
+});
+
+describe("exportDecisionsMarkdown", () => {
+	it("joins records under a project title with --- separators", () => {
+		const md = exportDecisionsMarkdown(
+			["## Decision: a\n**Outcome:** did a.", "## Decision: b\n**Outcome:** did b."],
+			"myproject",
+		);
+		expect(md).toContain("# Decision records — myproject");
+		expect(md).toContain("_2 records · exported by pi-context-tree_");
+		expect(md).toContain("## Decision: a");
+		expect(md).toContain("## Decision: b");
+		expect(md).toContain("\n\n---\n\n"); // records separated
+	});
+
+	it("handles the empty case without a separator", () => {
+		const md = exportDecisionsMarkdown([]);
+		expect(md).toContain("# Decision records");
+		expect(md).toContain("_0 records");
+		expect(md).not.toContain("---");
 	});
 });

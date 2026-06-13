@@ -14,13 +14,57 @@
  * ours, no conflict.
  */
 
-import { band, contextSlice, estimateContextTokens } from "@pi-context-tree/core";
+import { aggregateConsumers, band, contextSlice, estimateContextTokens } from "@pi-context-tree/core";
 import { defaultTheme, renderGauge } from "@pi-context-tree/tui";
 import { type CtxLike, type PiLike, projectName } from "./adapter.ts";
 import { rememberCtx } from "./ctx-cache.ts";
 import { type SessionState, deriveState } from "./state.ts";
 
 let warnedRed = false;
+
+// Trend/attribution baseline (F5.2+): compared like-for-like turn over turn, reset
+// per session so a new session never inherits the previous one's trend.
+let lastPct: number | null = null;
+let lastEstimated = true;
+let lastConsumers = new Map<string, number>();
+const TREND_PTS = 3; // ▲ when context rose ≥ this many points since last turn
+const ATTRIBUTE_PTS = 5; // …and name the biggest-growth consumer at ≥ this jump
+
+/** Reset the trend baseline — on session_start, and from tests. */
+export function resetAmbient(): void {
+	lastPct = null;
+	lastEstimated = true;
+	lastConsumers = new Map();
+}
+
+/**
+ * ` ▲` / ` ▲ +Δ% (bucket)` — only across same-basis turns (never estimate↔real, whose
+ * apparent jump is just calibration). Updates the baseline as a side effect.
+ */
+function trendMarker(pct: number, estimated: boolean, consumers: Map<string, number>): string {
+	let out = "";
+	if (lastPct !== null && estimated === lastEstimated) {
+		const delta = pct - lastPct;
+		if (delta >= ATTRIBUTE_PTS) {
+			let topKey = "";
+			let topGrowth = 0;
+			for (const [key, tokens] of consumers) {
+				const growth = tokens - (lastConsumers.get(key) ?? 0);
+				if (growth > topGrowth) {
+					topGrowth = growth;
+					topKey = key;
+				}
+			}
+			out = topKey ? ` ▲ +${Math.round(delta)}% (${topKey})` : ` ▲ +${Math.round(delta)}%`;
+		} else if (delta >= TREND_PTS) {
+			out = " ▲";
+		}
+	}
+	lastPct = pct;
+	lastEstimated = estimated;
+	lastConsumers = consumers;
+	return out;
+}
 
 function nudgeOnRed(ctx: CtxLike, b: string): void {
 	if (b === "red" && !warnedRed) {
@@ -42,21 +86,33 @@ export function refreshAmbient(pi: PiLike, ctx: CtxLike): void {
 
 	const usage = ctx.getContextUsage?.();
 	const window = usage?.contextWindow ?? (ctx.model?.contextWindow as number | undefined);
-	let gaugeText = "ctx —";
+
+	// One (tokens, pct, estimated) measurement — pi's real count if it has one, else chars/4.
+	// The slice feeds both the estimate and the consumer breakdown used for attribution.
+	const slice = state?.leafId ? contextSlice(state.tree, state.leafId) : undefined;
+	const consumers = slice
+		? new Map(aggregateConsumers(slice).map((r) => [r.key, r.tokens] as [string, number]))
+		: undefined;
 	let gaugeTokens: number | null = null;
+	let pct: number | null = null;
 	let estimated = true;
 	if (usage && usage.percent !== null && usage.tokens !== null && usage.tokens > 0) {
-		const b = band(usage.percent);
-		gaugeText = `ctx ${usage.percent.toFixed(1)}% ${b}`;
 		gaugeTokens = usage.tokens;
+		pct = usage.percent;
 		estimated = false;
+	} else if (slice && window && window > 0) {
+		gaugeTokens = estimateContextTokens(slice);
+		pct = (gaugeTokens / window) * 100;
+	}
+
+	const trend = pct !== null && consumers ? trendMarker(pct, estimated, consumers) : "";
+
+	let gaugeText = "ctx —";
+	if (pct !== null) {
+		const b = band(pct);
+		// honest: no fake-precise percent while estimating — band word + est marker
+		gaugeText = estimated ? `ctx ${b} · est${trend}` : `ctx ${pct.toFixed(1)}% ${b}${trend}`;
 		nudgeOnRed(ctx, b);
-	} else if (state?.leafId && window && window > 0) {
-		const est = estimateContextTokens(contextSlice(state.tree, state.leafId));
-		const pct = (est / window) * 100;
-		gaugeText = `ctx ~${pct.toFixed(1)}% ${band(pct)}`;
-		gaugeTokens = est;
-		nudgeOnRed(ctx, band(pct));
 	} else if (usage) {
 		gaugeText = "ctx est…";
 	}
@@ -67,12 +123,15 @@ export function refreshAmbient(pi: PiLike, ctx: CtxLike): void {
 	// G1: colored context-health gauge bar above the prompt (green→red, band-ticked)
 	if (ctx.ui.setWidget && window && window > 0) {
 		const bar = renderGauge({ tokens: gaugeTokens, window, estimated, barWidth: 28 }, defaultTheme);
-		ctx.ui.setWidget("ctree-gauge", [` ${bar}`], { placement: "aboveEditor" });
+		ctx.ui.setWidget("ctree-gauge", [` ${bar}${trend}`], { placement: "aboveEditor" });
 	}
 }
 
 export function registerAmbient(pi: PiLike): void {
-	pi.on?.("session_start", (_e, ctx) => refreshAmbient(pi, ctx));
+	pi.on?.("session_start", (_e, ctx) => {
+		resetAmbient();
+		refreshAmbient(pi, ctx);
+	});
 	pi.on?.("turn_end", (_e, ctx) => refreshAmbient(pi, ctx));
 	pi.on?.("session_tree", (_e, ctx) => refreshAmbient(pi, ctx));
 	pi.on?.("session_before_compact", (_e, ctx) => {

@@ -17,6 +17,7 @@ import { registerCrop } from "./crop-cmd.ts";
 import { realDraft } from "./draft.ts";
 import { registerMerge } from "./merge.ts";
 import { registerPanel } from "./panel-cmd.ts";
+import { registerUndo } from "./undo.ts";
 
 export default function piContextTree(api: ExtensionAPI): void {
 	// pi's ExtensionAPI is a structural superset of PiLike (verified 0.79.1).
@@ -27,6 +28,7 @@ export default function piContextTree(api: ExtensionAPI): void {
 	registerMerge(pi, deps);
 	registerCrop(pi);
 	registerPanel(pi, deps);
+	registerUndo(pi);
 	registerAmbient(pi);
 
 	// ◆ decision records render as mockup-style cards in the chat (F7 polish)

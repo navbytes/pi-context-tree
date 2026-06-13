@@ -29,18 +29,20 @@ import { type SessionState, branchEntries, deriveState } from "./state.ts";
 
 type MergeMode = "squash" | "no-llm" | "discard" | "tournament";
 
-function parseArgs(args: string): { mode?: MergeMode; note: string } {
+function parseArgs(args: string): { mode?: MergeMode; pick: boolean; note: string } {
 	const tokens = args.trim().split(/\s+/).filter(Boolean);
 	let mode: MergeMode | undefined;
+	let pick = false;
 	const rest: string[] = [];
 	for (const t of tokens) {
 		if (t === "--squash") mode = "squash";
 		else if (t === "--no-llm") mode = "no-llm";
 		else if (t === "--discard") mode = "discard";
 		else if (t === "--tournament") mode = "tournament";
+		else if (t === "--pick") pick = true;
 		else rest.push(t);
 	}
-	return { mode, note: rest.join(" ") };
+	return { mode, pick, note: rest.join(" ") };
 }
 
 async function pickMode(ctx: CmdCtxLike, fork: ForkInfo, siblings: ForkInfo[]): Promise<MergeMode | undefined> {
@@ -104,7 +106,8 @@ export async function mergeHandler(pi: PiLike, ctx: CmdCtxLike, args: string, de
 	const siblings = siblingForks(state.forks, fork.entryId);
 
 	const parsed = parseArgs(args);
-	const mode = parsed.mode ?? (await pickMode(ctx, fork, siblings));
+	// Bare /merge = squash (the 99% path); --pick reopens the mode selector (F2).
+	const mode = parsed.mode ?? (parsed.pick ? await pickMode(ctx, fork, siblings) : "squash");
 	if (!mode) {
 		ctx.ui.notify("merge cancelled — nothing written", "info");
 		return;
@@ -129,6 +132,7 @@ export async function mergeHandler(pi: PiLike, ctx: CmdCtxLike, args: string, de
 			forkEntryId: fork.entryId,
 			status: "discarded",
 			note: note?.trim() || undefined,
+			prevLeafId: state.leafId,
 		});
 		await restoreTrunkModel(pi, ctx, fork);
 		refreshAmbient(pi, ctx);
@@ -198,7 +202,13 @@ export async function mergeHandler(pi: PiLike, ctx: CmdCtxLike, args: string, de
 		{ triggerTurn: false },
 	);
 	const decisionEntryId = lastEntryId(ctx) ?? undefined;
-	pi.appendEntry(CTREE_CLOSE, { v: 1, forkEntryId: fork.entryId, status: "squashed", decisionEntryId });
+	pi.appendEntry(CTREE_CLOSE, {
+		v: 1,
+		forkEntryId: fork.entryId,
+		status: "squashed",
+		decisionEntryId,
+		prevLeafId: state.leafId,
+	});
 	for (const r of rejected) {
 		const sib = siblings.find((s) => s.data.name === r.name);
 		if (sib) pi.appendEntry(CTREE_CLOSE, { v: 1, forkEntryId: sib.entryId, status: "rejected", note: r.reason });
@@ -227,10 +237,10 @@ async function restoreTrunkModel(pi: PiLike, ctx: CmdCtxLike, fork: ForkInfo): P
 
 export function registerMerge(pi: PiLike, deps: Deps): void {
 	pi.registerCommand("merge", {
-		description: "pi-context-tree: close the open branch — squash (decision record) | discard | tournament",
+		description: "pi-context-tree: close the open branch — squash (default) | --pick | --discard | --tournament",
 		handler: (args, ctx) => mergeHandler(pi, ctx, args, deps),
 		getArgumentCompletions: (prefix) => {
-			const flags = ["--squash", "--no-llm", "--discard", "--tournament"];
+			const flags = ["--squash", "--no-llm", "--discard", "--tournament", "--pick"];
 			const last = prefix.split(/\s+/).pop() ?? "";
 			const hits = flags.filter((f) => f.startsWith(last));
 			return hits.length ? hits.map((value) => ({ value, label: value })) : null;

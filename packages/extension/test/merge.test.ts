@@ -160,14 +160,28 @@ describe("/merge --tournament", () => {
 	});
 });
 
-describe("/merge interactive selector", () => {
-	it("uses pi's native select and honors the choice", async () => {
+describe("/merge default mode (bare = squash, --pick = selector)", () => {
+	it("bare /merge defaults to squash — no 'pick a mode' tax, straight to the editor gate", async () => {
+		const w = makeFake();
+		const forkId = await seedBranch(w);
+		w.ui.editorQueue.push("__ACCEPT_PREFILL__");
+
+		await mergeHandler(w.pi, w.ctx, "", depsWith());
+
+		expect(w.ui.selectCalls).toHaveLength(0); // no selector on the 99% path
+		expect(entriesByType(w.session, "custom_message", "ctree/decision")).toHaveLength(1);
+		const close = (entriesByType(w.session, "custom", "ctree/close")[0] as { data?: CtreeCloseData }).data!;
+		expect(close.status).toBe("squashed");
+		expect(close.forkEntryId).toBe(forkId);
+	});
+
+	it("--pick opens the native selector and honors the choice", async () => {
 		const w = makeFake();
 		const forkId = await seedBranch(w);
 		w.ui.selectQueue.push("discard — return to the label, inject nothing, mark rejected");
 		w.ui.inputQueue.push("dead end");
 
-		await mergeHandler(w.pi, w.ctx, "", depsWith());
+		await mergeHandler(w.pi, w.ctx, "--pick", depsWith());
 
 		expect(w.ui.selectCalls[0]?.title).toContain("fix-flaky-test");
 		const close = (entriesByType(w.session, "custom", "ctree/close")[0] as { data?: CtreeCloseData }).data!;

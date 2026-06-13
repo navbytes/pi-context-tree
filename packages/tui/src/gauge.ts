@@ -31,7 +31,11 @@ export function renderGauge(input: GaugeInput, theme: CtreeTheme): string {
 		const ch = i < fill ? "█" : ticks.has(i) ? "┊" : "░";
 		bar += i < fill ? theme.band[b](ch) : theme.dim(ch);
 	}
-	const approx = input.estimated === false ? "" : "~";
-	const label = `${approx}${fmtTokens(input.tokens)} / ${fmtTokens(input.window)} · ${theme.band[b](`${pct.toFixed(1)}% ${b}`)}`;
+	// Honest estimate: while estimating (chars/4, pre-first-turn), show the band word
+	// + a coarse ~Nk est — never a fake-precise percent. Exact % only on pi's real count.
+	const label =
+		input.estimated === false
+			? `${fmtTokens(input.tokens)} / ${fmtTokens(input.window)} · ${theme.band[b](`${pct.toFixed(1)}% ${b}`)}`
+			: `~${fmtTokens(input.tokens)} est · ${theme.band[b](b)}`;
 	return `${theme.dim("CONTEXT")} ${bar} ${label}`;
 }

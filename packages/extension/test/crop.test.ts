@@ -20,14 +20,60 @@ describe("parseCropFlags", () => {
 			auto: true,
 			dryRun: true,
 			apply: false,
+			top: false,
 			minTokens: 5000,
 			olderThan: 3,
 			keep: ["chrome.*", "run_tests"],
 		});
 	});
 
-	it("parses --apply", () => {
+	it("parses --apply and --top", () => {
 		expect(parseCropFlags("--auto --apply").apply).toBe(true);
+		expect(parseCropFlags("--top").top).toBe(true);
+	});
+});
+
+describe("/crop --top (biggest unprotected result, inline)", () => {
+	it("crops the single biggest unprotected result after a confirm", async () => {
+		const w = makeFake();
+		w.session.user("q");
+		w.session.toolResult("small.tool", "s".repeat(8_000)); // unprotected (older), small
+		w.session.assistant("a1");
+		w.session.toolResult("small.tool", "s".repeat(400)); // latest small.tool — protected
+		w.session.assistant("a2");
+		const big = w.session.toolResult("big.tool", "b".repeat(120_000)); // unprotected (older), biggest
+		w.session.assistant("a3");
+		w.session.toolResult("big.tool", "b".repeat(400)); // latest big.tool — protected
+		w.session.assistant("a4");
+
+		w.ui.confirmQueue.push(true);
+		await cropHandler(w.pi, w.ctx, "--top");
+
+		const markers = entriesByType(w.session, "custom", "ctree/crop");
+		expect(markers).toHaveLength(1);
+		const stubbed = (markers[0] as { data?: { stubbed?: { entryId: string; tool: string }[] } }).data?.stubbed ?? [];
+		expect(stubbed[0]?.entryId).toBe(big); // chose the biggest unprotected, not the small one
+		expect(stubbed[0]?.tool).toBe("big.tool");
+	});
+
+	it("writes nothing when the user declines the confirm", async () => {
+		const w = makeFake();
+		const { snap1 } = seedBigSession(w);
+		void snap1;
+		w.ui.confirmQueue.push(false);
+		await cropHandler(w.pi, w.ctx, "--top");
+		expect(entriesByType(w.session, "custom", "ctree/crop")).toHaveLength(0);
+		expect(w.ui.notes().some((n) => n.includes("cancelled"))).toBe(true);
+	});
+
+	it("reports when every candidate is a protected latest result", async () => {
+		const w = makeFake();
+		w.session.user("q");
+		w.session.toolResult("only.tool", "x".repeat(40_000)); // single result → latest → protected
+		w.session.assistant("a");
+		await cropHandler(w.pi, w.ctx, "--top");
+		expect(entriesByType(w.session, "custom", "ctree/crop")).toHaveLength(0);
+		expect(w.ui.notes().some((n) => n.includes("protected"))).toBe(true);
 	});
 });
 
