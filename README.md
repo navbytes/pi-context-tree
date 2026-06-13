@@ -57,10 +57,11 @@ You can already *split* and *navigate* context natively — but the moves that k
 | | |
 |---|---|
 | **`/branch <name> [model]`** | Label the current point and fork off — optionally onto a cheaper model for the side-quest. The trunk model is restored on merge. |
-| **`/merge`** | Close a branch: **squash** to a human-confirmed ◆ decision record, **discard** it, or run a **tournament** between sibling approaches (winner record + epitaphs for the losers). |
-| **`/crop`** | Surgically stub fat tool/MCP results, or drop a whole Q&A turn — **append-only**, originals always recoverable. Interactive panel or headless `--auto --apply`. |
-| **`/panel` (`Ctrl+Q`)** | Full-screen TUI: the tree with per-node token costs, branch status colors, top context consumers, all decision records, and an entry inspector. |
-| **Ambient health gauge** | A green→red context-health bar pinned above your prompt (band ticks at 5/15/40%), a color-hashed terminal title, and a one-time nudge before context rots. |
+| **`/merge`** | Close a branch — **bare `/merge` squashes** to a human-confirmed ◆ decision record (`--pick` for the mode selector); also **discard** and **tournament** (winner record + epitaphs for the losers). |
+| **`/crop`** | Stub fat tool/MCP results, or drop a whole Q&A turn — **append-only**, always recoverable. `--top` crops the biggest result inline; or review in the panel; or headless `--auto --apply`. |
+| **`/undo`** | One-key revert of the last mutation — re-open a squashed/discarded branch, restore a crop, or undo a `/branch`. **Append-only**: nothing is deleted. |
+| **`/panel` (`Ctrl+Q`)** | Full-screen TUI: the tree with per-node token costs, branch status colors, top context consumers, all decision records (`/decisions --export` to markdown), and an entry inspector. |
+| **Ambient health gauge** | A green→red bar above your prompt with a **`▲` trend + jump attribution** — `ctx 38% ▲ +24% (chrome.snapshot)` tells you *what* to crop. Honest while estimating (band + `~est`, never a fake-precise %). Plus a hashed title and a 40% nudge. |
 | **`pitree`** | A standalone, **read-only** forest CLI across all your pi projects, with dangling-branch detection. |
 
 ## Demo
@@ -130,10 +131,13 @@ pi install git:github.com/navbytes/pi-context-tree
 #    …do the noisy exploration…
 
 # 3. fold just the conclusion back to the trunk as a reviewed decision record
-/merge            # pick "squash" → merge opens $EDITOR; save to confirm, quit empty to abort
+/merge            # bare /merge = squash → opens $EDITOR; save to confirm, quit empty to abort
 
 # 4. see and prune what's in context any time
-/panel            # browse the tree;  /crop to stub a 40k-token tool dump
+/panel            # browse the tree;  /crop --top to stub the biggest tool dump
+
+# changed your mind? one-key, append-only revert of the last branch/merge/crop
+/undo
 ```
 
 > New to the workflow? The hands-on [**USAGE guide**](docs/USAGE.md) walks the full loop with worked examples.
@@ -149,20 +153,22 @@ Labels the current point (mirrored into pi's native labels — it doubles as a c
 /branch fix-flaky-test haiku-4.5     # …and run the branch on haiku (bare id or provider/id; Tab completes)
 ```
 
-### `/merge [--squash | --no-llm | --discard | --tournament] [note…]`
+### `/merge [--pick | --no-llm | --discard | --tournament] [note…]`
 
-Closes the nearest open branch at or above the leaf. With no flag, a selector offers the modes:
+Closes the nearest open branch at or above the leaf. **Bare `/merge` squashes** — the 99% path, straight to the editor draft. `--pick` opens a selector with every mode; or pass a mode directly:
 
-- **squash** — the branch model drafts a decision record from the branch transcript; it opens in your editor. **Nothing lands until you save** — closing the editor empty aborts everything. The confirmed record becomes one ◆ decision record at the branch label; the noisy turns stay on the branch (history is append-only, never deleted).
+- **squash** (the default) — the branch model drafts a decision record from the branch transcript; it opens in your editor. **Nothing lands until you save** — closing the editor empty aborts everything. The confirmed record becomes one ◆ decision record at the branch label; the noisy turns stay on the branch (history is append-only, never deleted).
 - **squash `--no-llm`** — same flow, but you write the record into the template yourself (no LLM call).
 - **`--discard [note]`** — back to the label, nothing injected, branch marked rejected. The note lands on the close marker.
 - **`--tournament`** — needs open sibling branches forked from the same point. The current branch wins: ONE combined record (winner + one-line drafted epitaphs for each loser), per-sibling close markers. Epitaphs keep the trunk model from re-proposing rejected approaches.
 
 Merging never triggers pi's lossy summarize-on-leave — you never end up with both a summary and a decision record.
 
-### `/crop [--auto] [--apply] [--dry-run] [--min-tokens N] [--older-than N] [--keep glob]`
+### `/crop [--top] [--auto] [--apply] [--dry-run] [--min-tokens N] [--older-than N] [--keep glob]`
 
 Surgically stubs out fat tool/MCP results. Interactive by default: opens the panel's crop view with rule-based pre-marking when `--auto` is given. `--auto --apply` skips the panel entirely (scriptable; the only mode available where pi has no TUI). `--dry-run` always wins — it reports and writes nothing.
+
+**`/crop --top`** is the one-shot path: it names the single biggest *unprotected* result and asks `✂ chrome.snapshot ~61k → crop? [y/N]` — one trusted decision instead of the blind rules sweep.
 
 Auto rules: ≥ `--min-tokens` (default 10k), older than `--older-than` assistant turns (default 2), never the latest result per tool (cropping those needs an explicit double-mark in the panel), never `--keep` matches.
 
@@ -173,9 +179,19 @@ Auto rules: ≥ `--min-tokens` (default 10k), older than `--older-than` assistan
 
 Both branch at an anchor and leave the originals untouched on the previous branch — recoverable forever, nothing is ever deleted.
 
-### `/panel` (also `Ctrl+Q`) and `/decisions`
+### `/undo`
 
-The full-screen context panel (an overlay over pi). `/decisions` opens it straight on the decisions view (and prints a text listing where no TUI is available, e.g. RPC mode). The panel stays up across actions: pick a mutation (jump/branch/merge/crop-apply), it executes in command context after re-validating the session, and the panel reopens with fresh state until you close it. `Ctrl+Q` opens view-only in 0.79.1 (shortcuts get no command context and pi has no command-invoke API) — use `/panel` for mutations.
+One-key revert of the last pi-context-tree mutation — **append-only, nothing is deleted**. It navigates the leaf back to the anchor the mutation recorded, and a confirm names exactly what reverts:
+
+- after a **squash / discard** → re-opens the branch at its tip (the decision record stays in history, off-path);
+- after a **crop** → restores the original fat result or Q&A turn;
+- after a **`/branch`** → drops back to where you branched.
+
+It reverts the last *active* mutation (the most recent still on your path) — run it again to peel back further. This is the safety net that makes cropping and merging feel reversible.
+
+### `/panel` (also `Ctrl+Q`) and `/decisions [--export path]`
+
+The full-screen context panel (an overlay over pi). `/decisions` opens it straight on the decisions view (and prints a text listing where no TUI is available, e.g. RPC mode); **`/decisions --export [path]`** writes every trunk record to portable markdown (default `ctree-decisions.md`) to paste into a PR / ADR / Slack. The panel stays up across actions: pick a mutation (jump/branch/merge/crop-apply), it executes in command context after re-validating the session, and the panel reopens with fresh state until you close it. `Ctrl+Q` opens view-only in 0.79.1 (shortcuts get no command context and pi has no command-invoke API) — use `/panel` for mutations.
 
 ## The context panel
 
@@ -185,7 +201,7 @@ A full-screen overlay with five keyboard-driven views — **tree** (every entry 
 
 ### Ambient UI (outside the panel)
 
-A **context-health gauge bar pinned above the prompt** (`CONTEXT ▓▓░ … N% band`, green→red, band ticks at 5/15/40%), plus a footer status `⎇ branch · ctx N% band`, a terminal title color-hashed per branch, a one-time nudge when context crosses 40%, and a philosophy warning on `/compact`.
+A **context-health gauge bar pinned above the prompt** (`CONTEXT ▓▓░ … N% band`, green→red, band ticks at 5/15/40%). It carries a **`▲` trend** when context is filling fast and **attributes jumps** — `ctx 38% ▲ +24% (chrome.snapshot)` names *what* just bloated the window, right where you'll see it. While pi is still estimating (right after a session loads) it stays honest: the band word + a coarse `~est`, never a fake-precise percent. Plus a footer status `⎇ branch · ctx N% band`, a terminal title color-hashed per branch, a one-time nudge when context crosses 40%, and a philosophy warning on `/compact`.
 
 ### `pitree` — the standalone forest CLI
 
@@ -208,7 +224,9 @@ Flags dangling branches (open forks with no close marker) across every project. 
 
 **My commands appear twice.** You have both the installed package and a `-e` dev tree loaded. Remove one — `pi remove git:github.com/navbytes/pi-context-tree`, or stop passing `-e`.
 
-**The gauge shows `~` or `0%`.** pi reports zero context usage right after a session loads; the `~` marks a chars/4 estimate until your first fresh turn, then it switches to pi's real number.
+**The gauge says "est" or shows a `~`.** pi reports zero context usage right after a session loads, so until your first fresh turn the gauge shows the band word + a coarse `~Nk est` (no fake-precise percent on a guess); it switches to pi's exact number once a turn lands.
+
+**Where did `/undo` put me?** `/undo` re-opens the last branch/crop by navigating your leaf back to where the mutation started — nothing is deleted. After undoing a squash you're back *on the branch* (the decision record is still in history, just off your current path); type and keep working, or `/undo` again to peel back the previous mutation.
 
 **Does this ever rewrite or delete my session?** No — every change is append-only. `/merge` and `/crop` add new entries and the originals stay recoverable on the previous branch, verified by byte-for-byte golden tests against real pi.
 
