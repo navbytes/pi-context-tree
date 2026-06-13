@@ -18,6 +18,7 @@
 <p align="center">
   <a href="#why">Why</a> ·
   <a href="#features">Features</a> ·
+  <a href="#demo">Demo</a> ·
   <a href="#install">Install</a> ·
   <a href="#quickstart">Quickstart</a> ·
   <a href="#usage">Usage</a> ·
@@ -51,7 +52,12 @@ pi-context-tree treats the session like a **git repo**: the trunk is `master`, s
 | **Ambient health gauge** | A green→red context-health bar pinned above your prompt (band ticks at 5/15/40%), a color-hashed terminal title, and a one-time nudge before context rots. |
 | **`pitree`** | A standalone, **read-only** forest CLI across all your pi projects, with dangling-branch detection. |
 
-## Screenshots
+## Demo
+
+<p align="center">
+  <!-- TODO: replace docs/assets/demo-placeholder.svg with the recorded docs/assets/demo.gif, then delete the placeholder. See docs/RECORDING.md. -->
+  <img src="docs/assets/demo-placeholder.svg" alt="pi-context-tree demo — recording coming soon" width="820">
+</p>
 
 The full-screen context panel — the tree with token costs, branch status colors, the health gauge, and one-keystroke actions:
 
@@ -59,7 +65,7 @@ The full-screen context panel — the tree with token costs, branch status color
   <img src="docs/assets/panel.svg" alt="The pi-context-tree context panel showing a session tree with per-node token costs, branch status colors, a health gauge, and key hints" width="820">
 </p>
 
-> Prefer to click around? Open the interactive [TUI mockup](docs/pi-context-tree-mockup.html) in a browser — the keybindings match the implementation. *(A short terminal demo GIF is on the way.)*
+> Prefer to click around? Open the interactive [TUI mockup](docs/pi-context-tree-mockup.html) in a browser — the keybindings match the implementation.
 
 ## Requirements
 

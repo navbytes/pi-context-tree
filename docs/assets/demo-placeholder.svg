@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="440" viewBox="0 0 820 440" role="img" aria-label="Placeholder for the pi-context-tree demo GIF — to be recorded.">
+  <rect width="820" height="440" rx="12" fill="#0d1117"/>
+  <rect x="0.5" y="0.5" width="819" height="439" rx="12" fill="none" stroke="#30363d"/>
+
+  <!-- title bar -->
+  <rect x="1" y="1" width="818" height="38" rx="12" fill="#161b22"/>
+  <circle cx="24" cy="20" r="6" fill="#f85149"/>
+  <circle cx="44" cy="20" r="6" fill="#d29922"/>
+  <circle cx="64" cy="20" r="6" fill="#3fb950"/>
+  <text x="92" y="25" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" fill="#8b949e">pi — pi-context-tree demo</text>
+
+  <!-- play button -->
+  <circle cx="410" cy="210" r="56" fill="#161b22" stroke="#30363d"/>
+  <path d="M392 184 L392 236 L438 210 Z" fill="#3fb950"/>
+
+  <text x="410" y="312" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="22" font-weight="700" fill="#e6edf3">Demo GIF coming soon</text>
+  <text x="410" y="344" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" fill="#8b949e">/branch → /merge (squash) → /panel → /crop</text>
+  <text x="410" y="392" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#6e7681">to record: see docs/RECORDING.md  (asciinema rec → agg)</text>
+</svg>

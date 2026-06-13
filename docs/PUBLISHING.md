@@ -44,7 +44,7 @@ The repo is a workspace monorepo. pi loads the **extension TypeScript source** v
 
 ## 3. Land in the pi gallery (pi.dev/packages)
 The gallery indexes npm packages with the `pi-package` keyword (already set). To get media:
-1. Record the demo (see the recipe in [ADOPTION.md](ADOPTION.md#demo-recording-recipe--5-min)) → `docs/assets/demo.gif` and an MP4.
+1. Record the demo (see [RECORDING.md](RECORDING.md)) → `docs/assets/demo.gif` and an MP4.
 2. Add to the root `package.json`:
    ```jsonc
    "image": "https://raw.githubusercontent.com/navbytes/pi-context-tree/main/docs/assets/demo.gif",
