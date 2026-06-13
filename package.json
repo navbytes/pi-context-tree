@@ -28,6 +28,8 @@
 	"bugs": {
 		"url": "https://github.com/navbytes/pi-context-tree/issues"
 	},
+	"image": "https://raw.githubusercontent.com/navbytes/pi-context-tree/main/docs/assets/demo.gif",
+	"video": "https://raw.githubusercontent.com/navbytes/pi-context-tree/main/docs/assets/demo.mp4",
 	"pi": {
 		"extensions": ["./extensions"]
 	},
