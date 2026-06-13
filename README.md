@@ -11,8 +11,6 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/node-%E2%89%A522.19-339933?logo=node.js&logoColor=white" alt="Node >= 22.19">
   <img src="https://img.shields.io/badge/pi-0.79.1-8957e5" alt="pi 0.79.1">
-  <img src="https://img.shields.io/badge/tests-164%20passing-2ea043" alt="164 tests passing">
-  <img src="https://img.shields.io/badge/built%20with-TDD-ff69b4" alt="Built with TDD">
 </p>
 
 <p align="center">
@@ -31,15 +29,26 @@
 
 **pi-context-tree** is a [pi](https://github.com/earendil-works/pi) package that turns the session tree into a git-style workflow with a rich context panel. It keeps the working context **small, fresh, and relevant**, folds side-work back as clean reviewed commits, and never lets lossy auto-summaries touch your source material.
 
+> **Never mutates your session JSONL** — every change is append-only and recoverable, verified by byte-for-byte golden tests against real pi.
+
 ## Why
 
-A model's attention is a fixed budget — softmax forces every token to compete for a slice. As the context window fills, retrieval degrades **measurably and non-uniformly**:
+As the context window fills, retrieval degrades **measurably and non-uniformly** — attention is a fixed budget and every token competes for a slice:
 
-- **Context rot** (Chroma 2025, adopted by Anthropic's context-engineering guidance) — quality drops with input length, even on minimal tasks.
-- **NoLiMa** (ICML 2025) — of 13 models claiming ≥128k windows, 11 fall below 50% of their short-context baseline by 32k tokens.
-- **LongMemEval** — every model family scores higher on a focused prompt than on the same task buried in ~113k tokens. Pruning is a *quality* feature.
+- **Context rot** (Chroma 2025, cited in Anthropic's context-engineering guidance) — answer quality drops with input length, even on trivial tasks.
+- **NoLiMa** (ICML 2025) — of 13 models claiming ≥128k windows, 11 fall below half their short-context score by 32k tokens.
 
-pi-context-tree treats the session like a **git repo**: the trunk is `master`, side work happens on branches, and `master` only receives clean, human-reviewed "commits" (decision records). Keep the trunk in a **5–15% band** (an opinionated heuristic — see the [spec's evidence section](docs/pi-context-tree-spec.md#part-0--design-philosophy-context-for-the-building-agent)), never `/compact`, and reuse context instead of regenerating it.
+So pruning is a *quality* feature, not just a cost one. pi-context-tree treats the session like a **git repo**: a small trunk (`master`), side-work on branches, and `master` only ever receives clean, human-reviewed commits — never a lossy auto-summary. (Heuristic: keep the trunk in a [5–15% band](docs/pi-context-tree-spec.md#part-0--design-philosophy-context-for-the-building-agent).)
+
+### Why not pi's built-in `/fork`, `/tree`, and `/compact`?
+
+You can already *split* and *navigate* context natively — but the moves that keep the trunk clean aren't there. That's the gap this fills:
+
+| You want to… | Native pi | pi-context-tree |
+|---|---|---|
+| explore a side-quest, then bring back **only the answer** | `/fork` + `/tree` split and navigate; leaving a branch **auto-summarizes** (lossy, unconfirmed) | `/branch` + `/merge --squash` fold back a **human-confirmed decision record** — the noisy turns stay on the branch, recoverable |
+| reclaim a **bloated tool result** | `/compact` rewrites the *whole* context into a lossy summary you can't undo | `/crop` surgically stubs one fat result (or a whole Q&A turn) — **append-only and recoverable** |
+| **see what's filling** the window and act on it | `/tree` switches branches | `/panel` adds per-node token costs, a top-consumers view, decision cards, and one-key crop/branch/merge |
 
 ## Features
 
@@ -99,19 +108,19 @@ node packages/pitree/dist/cli.js ui                  # session picker → read-o
 
 ## Quickstart
 
-A 30-second tour of the core loop:
+The core loop, end to end:
 
 ```sh
 # 1. install into pi (survives restarts; re-run to update)
 pi install git:github.com/navbytes/pi-context-tree
 
-# 2. inside a pi session, fork off for a side-quest (optionally on a cheaper model)
-/branch fix-flaky-test haiku-4.5
+# 2. inside a pi session, fork off for a side-quest
+/branch fix-flaky-test               # add a model id (e.g. haiku-4.5) to run the branch on a cheaper one
 
 #    …do the noisy exploration…
 
 # 3. fold just the conclusion back to the trunk as a reviewed decision record
-/merge            # pick "squash" → edit the drafted record → save
+/merge            # pick "squash" → merge opens $EDITOR; save to confirm, quit empty to abort
 
 # 4. see and prune what's in context any time
 /panel            # browse the tree;  /crop to stub a 40k-token tool dump
@@ -203,7 +212,7 @@ Flags dangling branches (open forks with no close marker) across every project. 
 
 ```sh
 npm install
-npm test            # builds core/tui/pitree dist, then vitest in all workspaces (161 tests)
+npm test            # builds core/tui/pitree dist, then vitest in all workspaces
 npm run check       # tsc --noEmit ×4 packages + biome
 npm run fixtures    # regenerate committed fixtures (deterministic, byte-identical)
 ```
