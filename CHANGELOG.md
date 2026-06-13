@@ -9,6 +9,12 @@ All notable changes to this project are documented here. The format is based on
 ### Added
 - `LICENSE` (MIT), `CONTRIBUTING.md`, and this changelog.
 - Discovery metadata on the package manifest (`license`, `author`, `repository`, `bugs`, `homepage`, expanded `keywords`) and an SVG banner.
+- README adoption hero (banner, badges, value prop, 30-second quickstart).
+- [`docs/ADOPTION.md`](docs/ADOPTION.md) — adoption plan + turnkey owner checklist.
+- GitHub issue and pull-request templates.
+
+### Changed
+- Core `@earendil-works/*` packages moved to `peerDependencies` (`*`) per pi's packaging rules; pinned copies kept in `devDependencies` for local build/test.
 
 ## [0.1.0] — 2026-06-13
 
