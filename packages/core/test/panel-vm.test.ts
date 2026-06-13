@@ -43,6 +43,22 @@ describe("PanelVm header", () => {
 		expect(h.tokens).toBeGreaterThan(15_000);
 		expect(["low", "healthy", "filling", "red"]).toContain(h.band);
 	});
+
+	it("falls back to the chars/4 estimate when pi reports zero usage for a non-empty session", () => {
+		// pi's getContextUsage() yields 0 right after a session loads (no fresh assistant
+		// usage yet) — trusting it would render a 0% gauge over a fat context (§11.5).
+		const { vm: p } = vm({ usageTokens: 0 });
+		const h = p.header();
+		expect(h.tokens).toBeGreaterThan(15_000);
+		expect(h.estimated).toBe(true);
+	});
+
+	it("still trusts real non-zero usage from pi", () => {
+		const { vm: p } = vm({ usageTokens: 42_000 });
+		const h = p.header();
+		expect(h.tokens).toBe(42_000);
+		expect(h.estimated).toBe(false);
+	});
 });
 
 describe("PanelVm tree view", () => {

@@ -129,9 +129,12 @@ export class PanelVm {
 
 	header(): PanelHeader {
 		const open = this.leafId ? nearestOpenFork(this.tree, this.leafId, this.forks) : undefined;
-		const estimated = typeof this.input.usageTokens !== "number";
-		const tokens =
-			typeof this.input.usageTokens === "number" ? this.input.usageTokens : estimateContextTokens(this.slice);
+		// pi reports usage 0 until a fresh assistant turn lands (right after load or
+		// compaction) — for a non-empty slice that would draw a 0% gauge over a fat
+		// context, so fall back to the chars/4 estimate instead (§11.5).
+		const usable = typeof this.input.usageTokens === "number" && this.input.usageTokens > 0;
+		const estimated = !usable;
+		const tokens = usable ? (this.input.usageTokens as number) : estimateContextTokens(this.slice);
 		const window = this.input.contextWindow;
 		const pct = window && window > 0 ? (tokens / window) * 100 : undefined;
 		return {
