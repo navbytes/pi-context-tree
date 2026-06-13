@@ -124,7 +124,7 @@ Reading the tree: `●` user · `○` assistant · `⚙` tool/MCP · `◆` decis
 
 ## 6. The ambient signals (no panel needed)
 
-- **Gauge bar above the prompt** — `CONTEXT ▓▓▓░ … N% band`, green→red, ticks at 5/15/40%. Your at-a-glance context health.
+- **Gauge bar above the prompt** — `CONTEXT ▓▓▓░ … N% band`, green→red, ticks at 5/15/40% (the bands: `<5%` low · `5–15%` healthy · `15–40%` filling · `>40%` red). Your at-a-glance context health.
 - **Footer status** — `⎇ branch · ctx N% band`.
 - **Terminal title** — `project (branch) (pi)`, color hashed from the branch name.
 - **Red nudge** — a one-time gentle warning when context crosses 40%, suggesting `/branch`, `/merge`, or `/crop`.

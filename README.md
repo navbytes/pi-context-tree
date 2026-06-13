@@ -17,10 +17,12 @@
   <a href="#why">Why</a> ·
   <a href="#features">Features</a> ·
   <a href="#demo">Demo</a> ·
+  <a href="#status--compatibility">Status</a> ·
   <a href="#install">Install</a> ·
   <a href="#quickstart">Quickstart</a> ·
   <a href="#usage">Usage</a> ·
   <a href="#the-context-panel">Panel</a> ·
+  <a href="#faq">FAQ</a> ·
   <a href="#development">Development</a> ·
   <a href="#documentation">Docs</a>
 </p>
@@ -70,7 +72,7 @@ You can already *split* and *navigate* context natively — but the moves that k
 The full-screen context panel — the tree with token costs, branch status colors, the health gauge, and one-keystroke actions:
 
 <p align="center">
-  <img src="docs/assets/panel.svg" alt="The pi-context-tree context panel showing a session tree with per-node token costs, branch status colors, a health gauge, and key hints" width="820">
+  <img src="docs/assets/panel.png" alt="The pi-context-tree context panel (a real terminal capture): the session tree with per-node token costs, branch status colors, a squashed branch and its decision record, the health gauge, and the key-hint footer" width="820">
 </p>
 
 > Prefer to click around? Open the interactive [TUI mockup](docs/pi-context-tree-mockup.html) in a browser — the keybindings match the implementation.
@@ -82,15 +84,23 @@ The full-screen context panel — the tree with token costs, branch status color
 
 `pi install` handles everything else; pi provides its core packages to the extension at runtime.
 
+## Status & compatibility
+
+**Maturity:** early but functional — every command and panel view works against the pinned pi, covered by golden and real-TUI tests (see [Development](#development)). v0.1.0 isn't tagged yet, so installs track the default branch and the surface may still shift before the first release. Bug reports and feedback are very welcome.
+
+**pi version:** pinned to `@earendil-works/*@0.79.1`. A non-blocking CI lane runs the full integration suite against `pi@latest` to catch API drift early — but newer pi (0.80+) isn't officially supported yet. If something breaks on a newer pi, please [open an issue](https://github.com/navbytes/pi-context-tree/issues).
+
 ## Install
 
 ```sh
 # as a pi package (recommended — survives pi restarts, auto-updates on reinstall):
 pi install git:github.com/navbytes/pi-context-tree
 
-# pin to a release:
-pi install git:github.com/navbytes/pi-context-tree@v0.1.0
+# update (re-run install) · uninstall:
+pi remove git:github.com/navbytes/pi-context-tree
 ```
+
+> No tagged release yet — installs track the default branch. For a reproducible install, pin to a commit SHA (`…/pi-context-tree@<sha>`). See [Status &amp; compatibility](#status--compatibility).
 
 <details>
 <summary>Development tree &amp; standalone CLI</summary>
@@ -143,12 +153,12 @@ Labels the current point (mirrored into pi's native labels — it doubles as a c
 
 Closes the nearest open branch at or above the leaf. With no flag, a selector offers the modes:
 
-- **squash** — the branch model drafts a decision record from the branch transcript; it opens in your editor. **Nothing lands until you save** — closing the editor empty aborts everything. The confirmed record becomes one ◆ `custom_message` node at the branch label; the noisy turns stay on the branch (history is append-only, never deleted).
+- **squash** — the branch model drafts a decision record from the branch transcript; it opens in your editor. **Nothing lands until you save** — closing the editor empty aborts everything. The confirmed record becomes one ◆ decision record at the branch label; the noisy turns stay on the branch (history is append-only, never deleted).
 - **squash `--no-llm`** — same flow, but you write the record into the template yourself (no LLM call).
 - **`--discard [note]`** — back to the label, nothing injected, branch marked rejected. The note lands on the close marker.
 - **`--tournament`** — needs open sibling branches forked from the same point. The current branch wins: ONE combined record (winner + one-line drafted epitaphs for each loser), per-sibling close markers. Epitaphs keep the trunk model from re-proposing rejected approaches.
 
-Merging never triggers pi's summarize-on-leave (`summarize:false` everywhere) — a decision record and a `BranchSummaryEntry` can never double-write.
+Merging never triggers pi's lossy summarize-on-leave — you never end up with both a summary and a decision record.
 
 ### `/crop [--auto] [--apply] [--dry-run] [--min-tokens N] [--older-than N] [--keep glob]`
 
@@ -161,7 +171,7 @@ Auto rules: ≥ `--min-tokens` (default 10k), older than `--older-than` assistan
 - **result mode** (default) — stub individual fat tool/MCP results, replaced by `[cropped: tool arg, ~tokens, sha8]`.
 - **turn mode** — remove a whole **Q&A turn** (a user question + every answer/tool entry it spawned) *together*. Removing only the answer would orphan `tool_call`/`tool_result` pairs and break user/assistant alternation, so turns drop as a unit. A removed turn collapses to one label-free `[dropped turn — N entries, ~tokens, recoverable: sha8]` note. The current/leaf turn is protected; ◆ decision records can never be swept up. Turn removal is panel-only.
 
-Both apply the same way: branch at the anchor, write ONE `ctree/crop-tail` reconstruction block plus a `ctree/crop` marker (`stubbed[]` and/or `dropped[]`). Originals stay in the JSONL, recoverable forever.
+Both branch at an anchor and leave the originals untouched on the previous branch — recoverable forever, nothing is ever deleted.
 
 ### `/panel` (also `Ctrl+Q`) and `/decisions`
 
@@ -169,29 +179,13 @@ The full-screen context panel (an overlay over pi). `/decisions` opens it straig
 
 ## The context panel
 
-**Keys** (all views: `q` close · `esc` back/close · `↑↓`/`j k` move · `g G` top/bottom):
+A full-screen overlay with five keyboard-driven views — **tree** (every entry with its token cost and branch status), **consumers** (what's eating the window), **decisions** (◆ records as cards), **crop**, and **inspect**. You act from where you see the problem: `b` branch, `m` merge, `c` crop, `⏎` jump/fold. The screenshot above is the tree view.
 
-| view | keys |
-|---|---|
-| **tree** | `⏎` fold/unfold fork, jump leaf to entry · `b` branch from entry · `m` merge flow · `c` crop · `i` inspect entry · `D` decisions · `u` consumers |
-| **crop** | `t` toggle result ⇄ turn mode · `space` mark/unmark (result: `space space` overrides latest-per-tool protection; turn: marks the whole Q&A turn) · `a` apply --auto rules (result mode) · `⏎` apply plan |
-| **consumers** | `c` jump to crop |
-| **decisions** | `⏎` jump to the ◆ record on the trunk |
-| **inspect** | `c` pre-mark this entry for cropping |
-
-**Reading the panel:**
-
-- Glyphs: `●` user · `○` assistant · `⚙` tool/MCP result · `◆` decision record · `⎇` branch label · `✂` crop stub · `⚠` ≥10k-token entry.
-- Branch status colors: open green · dangling yellow (open fork, no close marker — a branch-hygiene smell) · squashed blue · rejected/discarded red.
-- Gauge bands at 5/15/40%: `<5%` low · `5–15%` healthy · `15–40%` filling · `>40%` red.
-- `← you are here` marks the open fork you'd merge; `◀ leaf` marks the entry context currently ends at.
-- In the chat itself, ◆ decision records render as cards (title · date · human-confirmed ✓ · outcome · red ✗ epitaphs).
+> **Full keymap, glyph legend, and reading guide → [USAGE §5 — The context panel](docs/USAGE.md#5-the-context-panel--keys).**
 
 ### Ambient UI (outside the panel)
 
-A **context-health gauge bar pinned above the prompt** (`CONTEXT ▓▓░ … N% band`, green→red, band ticks at 5/15/40%). Plus a footer status `⎇ branch · ctx N% band`, terminal title `project (branch) (pi)` color-hashed per branch, a one-time nudge when context crosses 40%, and a philosophy warning on `/compact`.
-
-> pi owns its input *border* (for bash/thinking-mode indication) and re-asserts it, so an extension can't color it by health without fighting pi. The gauge bar (pinned via `setWidget`) is the safe, faithful realization — the same always-visible green→red signal, directly above where you type.
+A **context-health gauge bar pinned above the prompt** (`CONTEXT ▓▓░ … N% band`, green→red, band ticks at 5/15/40%), plus a footer status `⎇ branch · ctx N% band`, a terminal title color-hashed per branch, a one-time nudge when context crosses 40%, and a philosophy warning on `/compact`.
 
 ### `pitree` — the standalone forest CLI
 
@@ -207,6 +201,18 @@ Flags dangling branches (open forks with no close marker) across every project. 
 - **Append-only, always.** Every mutation (`/merge`, `/crop`) writes new `ctree/*` entries; existing session JSONL lines are never edited or deleted, so originals are recoverable forever.
 - **Human-confirmed merges.** The only summarization is branch→decision-record, and it always passes through your editor before entering the trunk. `/merge` integrates with (never fights) pi's native summarize-on-leave and never double-writes a summary and a decision record.
 - **Layered, pi-light core.** `core` imports nothing of pi (pure parsing/tree/estimation/planning); `tui` builds the panel on pi-tui; only the `extension` adapter touches pi's API. See [the architecture doc](docs/pi-context-tree-architecture.md) for the verified pi APIs (with file:line references) and the load-bearing design decisions.
+
+## FAQ
+
+**`Ctrl+Q` doesn't open the panel.** It's view-only in pi 0.79.1 (shortcuts get no command context) — use `/panel` to mutate. If even view-only won't open, a terminal multiplexer may be intercepting the key; run `/panel` directly.
+
+**My commands appear twice.** You have both the installed package and a `-e` dev tree loaded. Remove one — `pi remove git:github.com/navbytes/pi-context-tree`, or stop passing `-e`.
+
+**The gauge shows `~` or `0%`.** pi reports zero context usage right after a session loads; the `~` marks a chars/4 estimate until your first fresh turn, then it switches to pi's real number.
+
+**Does this ever rewrite or delete my session?** No — every change is append-only. `/merge` and `/crop` add new entries and the originals stay recoverable on the previous branch, verified by byte-for-byte golden tests against real pi.
+
+**`pi install …@v0.1.0` fails.** There's no tagged release yet; install without the `@v0.1.0` pin (it tracks the default branch). See [Status &amp; compatibility](#status--compatibility).
 
 ## Development
 
@@ -251,4 +257,4 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for th
 
 ## Acknowledgements
 
-Built for [pi](https://github.com/earendil-works/pi) by earendil-works. The git-style context model and the "context is the new code" framing come from the *Context Engineering* deck that originated this project; the design philosophy is grounded in the context-rot / NoLiMa / LongMemEval research cited above.
+Built for [pi](https://github.com/earendil-works/pi) by earendil-works. The git-style context model and the "context is the new code" framing come from the *Context Engineering* deck that originated this project; the design philosophy is grounded in the context-rot and NoLiMa research cited above.
