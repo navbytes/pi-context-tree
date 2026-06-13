@@ -2,9 +2,32 @@
 	"name": "pi-context-tree",
 	"private": true,
 	"type": "module",
-	"version": "0.0.1",
-	"description": "Git-style /branch /merge /crop workflow + context panel for pi sessions",
-	"keywords": ["pi-package"],
+	"version": "0.1.0",
+	"description": "Git-style /branch /merge /crop workflow + context panel for pi sessions — keep your agent's context small, fresh, and relevant.",
+	"keywords": [
+		"pi-package",
+		"pi",
+		"pi-coding-agent",
+		"pi-extension",
+		"context-engineering",
+		"context-management",
+		"coding-agent",
+		"llm",
+		"tui",
+		"branch",
+		"merge",
+		"crop"
+	],
+	"license": "MIT",
+	"author": "Naveen (navbytes)",
+	"homepage": "https://github.com/navbytes/pi-context-tree#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/navbytes/pi-context-tree.git"
+	},
+	"bugs": {
+		"url": "https://github.com/navbytes/pi-context-tree/issues"
+	},
 	"pi": {
 		"extensions": ["./extensions"]
 	},

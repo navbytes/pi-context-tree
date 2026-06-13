@@ -1,10 +1,52 @@
-# pi-context-tree
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="pi-context-tree — git-style /branch, /merge, /crop plus a context panel for pi" width="820">
+</p>
 
-Git-style `/branch` · `/merge` · `/crop` workflow and a rich context panel for [pi](https://github.com/earendil-works/pi-mono) sessions. Keep the trunk **small, fresh, relevant** (5–15% of the window — an opinionated heuristic, see the spec's evidence section); never let lossy auto-summaries touch source material; merge branches back as **human-confirmed decision records**.
+<h1 align="center">pi-context-tree</h1>
 
-**Docs:** [docs/USAGE.md](docs/USAGE.md) (**hands-on guide — start here**) · [docs/APP-FEATURES.md](docs/APP-FEATURES.md) (feature inventory) · [docs/pi-context-tree-spec.md](docs/pi-context-tree-spec.md) (PRD/TRD v0.3) · [docs/pi-context-tree-architecture.md](docs/pi-context-tree-architecture.md) (verified pi APIs, design decisions) · [docs/pi-context-tree-mockup.html](docs/pi-context-tree-mockup.html) (interactive TUI mockup) · [docs/HANDOVER.md](docs/HANDOVER.md) (state + next phase).
+<p align="center"><b>Git for your agent's context.</b> Branch off for side-quests, squash the conclusion back as a human-confirmed decision record, and surgically crop bloated tool output — all inside <a href="https://github.com/earendil-works/pi">pi</a>.</p>
 
-**Pinned pi:** `@earendil-works/pi-coding-agent@0.79.1` + `@earendil-works/pi-tui@0.79.1` + `@earendil-works/pi-ai@0.79.1`.
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License">
+  <img src="https://img.shields.io/badge/node-%E2%89%A522.19-339933?logo=node.js&logoColor=white" alt="Node >= 22.19">
+  <img src="https://img.shields.io/badge/pi-0.79.1-8957e5" alt="pi 0.79.1">
+  <img src="https://img.shields.io/badge/tests-162%20passing-2ea043" alt="162 tests passing">
+  <img src="https://img.shields.io/badge/built%20with-TDD-ff69b4" alt="Built with TDD">
+</p>
+
+---
+
+**Why.** A model's attention is a fixed budget: as the context window fills, retrieval degrades — measurably and non-uniformly ("context rot"; NoLiMa; LongMemEval — see the [spec's evidence section](docs/pi-context-tree-spec.md#part-0--design-philosophy-context-for-the-building-agent)). pi-context-tree treats the session like a **git repo**: keep the trunk **small, fresh, relevant**, never let lossy auto-summaries (`/compact`) touch source material, and merge side-work back only as **clean, reviewed commits**.
+
+**What you get** — five commands and an ambient health gauge:
+
+| | |
+|---|---|
+| `/branch <name> [model]` | Label the spot and fork off — optionally onto a cheaper model for the side-quest. |
+| `/merge` | Close a branch: **squash** to a human-confirmed ◆ decision record, **discard**, or run a **tournament** between sibling approaches. |
+| `/crop` | Stub out fat tool/MCP results (or drop a whole Q&A turn) — append-only, originals always recoverable. |
+| `/panel` (`Ctrl+T`) | Full-screen TUI: the tree with per-node token costs, branch status colors, consumers, decisions, inspector. |
+| gauge bar | A green→red context-health bar pinned above your prompt, so you act before context rots. |
+
+## Quickstart (30 seconds)
+
+```sh
+# 1. install into pi (survives restarts; re-run to update)
+pi install git:github.com/navbytes/pi-context-tree
+
+# 2. inside a pi session, fork off for a side-quest (optionally on a cheaper model)
+/branch fix-flaky-test haiku-4.5
+
+#    …do the noisy exploration…
+
+# 3. fold just the conclusion back to the trunk as a reviewed decision record
+/merge            # pick "squash" → edit the drafted record → save
+
+# 4. see and prune what's in context any time
+/panel            # browse the tree;  /crop to stub a 40k-token tool dump
+```
+
+> New to the workflow? The hands-on [**USAGE guide**](docs/USAGE.md) walks the full loop with examples.
 
 ## Install
 
@@ -82,7 +124,7 @@ A **context-health gauge bar pinned above the prompt** (`CONTEXT ▓▓░ … N
 
 ```sh
 npm install
-npm test            # builds core/tui/pitree dist, then vitest in all workspaces (146 tests)
+npm test            # builds core/tui/pitree dist, then vitest in all workspaces (162 tests)
 npm run check       # tsc --noEmit ×4 packages + biome
 npm run fixtures    # regenerate committed fixtures (deterministic, byte-identical)
 ```
@@ -94,3 +136,17 @@ TDD throughout; `packages/core/src/testkit.ts` exports the deterministic `Sessio
 **Golden integration tests** (`packages/extension/test/golden/`): the real pinned pi runs in `--mode rpc` against a mock OpenAI endpoint; squash / discard / tournament / crop scenarios pin the resulting session JSONL byte-for-byte (normalized ids/timestamps). **Real-TUI test**: `tui-pty.test.ts` boots actual pi in a pseudo-terminal via `expect(1)`, opens the `/panel` overlay and walks the mockup keymap, asserting every screen paints. Both self-skip when `pi` (or `expect`) is missing; re-record intended golden changes with `UPDATE_GOLDENS=1 npm test -w @pi-context-tree/extension`.
 
 CI (`.github/workflows/ci.yml`): lint+types+unit per push · integration against the pinned pi (keyless) · non-blocking `pi@latest` drift lane.
+
+## Docs
+
+- [**USAGE.md**](docs/USAGE.md) — hands-on guide (install, the core loop, commands by example, panel keys, recipes). **Start here.**
+- [APP-FEATURES.md](docs/APP-FEATURES.md) — full feature inventory.
+- [pi-context-tree-spec.md](docs/pi-context-tree-spec.md) — PRD/TRD v0.3 + the evidence/positioning section.
+- [pi-context-tree-architecture.md](docs/pi-context-tree-architecture.md) — verified pi APIs (file:line) + design decisions.
+- [pi-context-tree-mockup.html](docs/pi-context-tree-mockup.html) — interactive TUI mockup (open in a browser).
+
+## Contributing & license
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the TDD/commit conventions and the dev loop, and [CHANGELOG.md](CHANGELOG.md) for release notes.
+
+Licensed under the [MIT License](LICENSE). Built for [pi](https://github.com/earendil-works/pi), pinned to `@earendil-works/pi-coding-agent@0.79.1` + `pi-tui@0.79.1` + `pi-ai@0.79.1`.
