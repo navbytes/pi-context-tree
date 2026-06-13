@@ -15,7 +15,7 @@ pi remove git:github.com/navbytes/pi-context-tree   # if already installed
 pi -e /path/to/pi-context-tree
 ```
 
-You'll know it's loaded when you see a **`CONTEXT …%` gauge bar above your prompt** and `⎇ trunk · ctx N%` in the footer. Commands available: `/branch` `/merge` `/crop` `/panel` `/decisions` (and `Ctrl+Q`).
+You'll know it's loaded when you see a **`CONTEXT …%` gauge bar above your prompt** and `⎇ trunk · ctx N%` in the footer. Commands available: `/branch` `/merge` `/crop` `/undo` `/panel` `/decisions` (and `Ctrl+Q`).
 
 ## 2. The idea in 30 seconds
 
@@ -61,16 +61,16 @@ Now do your 20 noisy turns — debugging, tool calls, dead ends — on the cheap
 
 **d) Fold the conclusion back.** When the side-quest is solved:
 ```
-/merge        → choose  squash
+/merge        # bare /merge = squash (use --pick for discard/tournament)
 ```
 The branch model drafts a decision record; it opens in your editor. Edit it, **save to confirm** (closing it empty aborts the whole merge). One clean ◆ node lands at the label, the trunk model is restored, and the 20 noisy turns stay on the branch.
 
 **e) Review your decisions any time:**
 ```
-/decisions
+/decisions                    # or  /decisions --export adr.md  to share them
 ```
 
-That's the loop: **see → crop → branch → merge**. Repeat.
+That's the loop: **see → crop → branch → merge**. Repeat. Reached for the wrong thing? `/undo` reverts the last step (append-only — nothing is lost).
 
 ## 4. Commands by example
 
@@ -81,10 +81,11 @@ That's the loop: **see → crop → branch → merge**. Repeat.
 ```
 The name is mirrored into pi's native label (it's also a checkpoint). The trunk model is recorded and restored when you merge.
 
-### `/merge [mode] [note]`
-Run `/merge` for a selector, or pass the mode directly:
+### `/merge [--pick | mode] [note]`
+Bare `/merge` squashes — the 99% path. Use `--pick` for the mode menu, or pass a mode directly:
 ```
-/merge --squash            # branch model drafts a decision record → you edit/confirm → lands at the label
+/merge                     # = squash: branch model drafts a decision record → you edit/confirm → lands at the label
+/merge --pick              # open the selector (squash / no-llm / discard / tournament)
 /merge --no-llm            # you write the record yourself (no LLM call)
 /merge --discard dead end  # back to the label, nothing injected, branch marked rejected ("dead end" on the marker)
 /merge --tournament        # winner's record + one-line epitaphs for sibling branches (needs open siblings)
@@ -95,18 +96,25 @@ The editor is a hard gate — **nothing lands until you save**. Merging never tr
 Stub a fat tool result, or remove a whole Q&A turn. Both branch at an anchor and leave the originals recoverable.
 
 ```
+/crop --top                            # one inline y/N on the single biggest unprotected result
 /crop                                  # open the panel, review interactively
 /crop --auto                           # pre-mark big/old/unprotected tool results, then review
 /crop --auto --apply                   # headless: apply the rule-selected crops, no panel
 /crop --auto --dry-run                 # show what it would crop, write nothing
 /crop --auto --min-tokens 5000 --older-than 3 --keep chrome.*
 ```
-Rules: ≥ `--min-tokens` (default 10k), older than `--older-than` turns (default 2), never the *latest* result per tool (those need an explicit double-mark), never `--keep` globs.
+`--top` is the fast path — `✂ chrome.snapshot ~61k → crop? [y/N]`, one trusted decision instead of the rules sweep. Rules (for `--auto`): ≥ `--min-tokens` (default 10k), older than `--older-than` turns (default 2), never the *latest* result per tool (those need an explicit double-mark), never `--keep` globs.
 
 **Remove a whole exchange (turn mode):** open `/crop`, press `t` to switch to turn mode, `space` to mark a question (its answers come with it), `⏎` to apply. Removing only the answer would orphan tool pairs, so turns drop together. The current turn and decision records are protected.
 
-### `/panel` · `/decisions` · `Ctrl+Q`
-`/panel` opens the full-screen context panel; `/decisions` opens it on the decisions view (and prints a text list when there's no TUI). The panel stays up across actions and reopens with fresh state until you close it. `Ctrl+Q` opens it **view-only** (a pi limitation — shortcuts get no command context) — use `/panel` to mutate.
+### `/undo` — take back the last step
+```
+/undo                                  # revert the last branch / merge / crop — append-only, nothing deleted
+```
+`/undo` navigates your leaf back to where the last mutation started: a squash/discard **re-opens the branch**, a crop **restores the original**, a `/branch` **drops back to where you branched**. A confirm names what reverts. It undoes the last *active* mutation; run it again to peel back further. (After undoing a squash you're back on the branch — the decision record stays in history, just off your current path.)
+
+### `/panel` · `/decisions [--export path]` · `Ctrl+Q`
+`/panel` opens the full-screen context panel; `/decisions` opens it on the decisions view (and prints a text list when there's no TUI). `/decisions --export [path]` writes every trunk record to portable markdown (default `ctree-decisions.md`) — paste into a PR / ADR / Slack. The panel stays up across actions and reopens with fresh state until you close it. `Ctrl+Q` opens it **view-only** (a pi limitation — shortcuts get no command context) — use `/panel` to mutate.
 
 ## 5. The context panel — keys
 
@@ -125,16 +133,17 @@ Reading the tree: `●` user · `○` assistant · `⚙` tool/MCP · `◆` decis
 ## 6. The ambient signals (no panel needed)
 
 - **Gauge bar above the prompt** — `CONTEXT ▓▓▓░ … N% band`, green→red, ticks at 5/15/40% (the bands: `<5%` low · `5–15%` healthy · `15–40%` filling · `>40%` red). Your at-a-glance context health.
+- **Trend + jump attribution** — a `▲` appears when context is filling fast, and a big jump is attributed to its cause: `ctx 38% ▲ +24% (chrome.snapshot)` tells you *what* to crop without opening the panel.
 - **Footer status** — `⎇ branch · ctx N% band`.
 - **Terminal title** — `project (branch) (pi)`, color hashed from the branch name.
 - **Red nudge** — a one-time gentle warning when context crosses 40%, suggesting `/branch`, `/merge`, or `/crop`.
 - **`/compact` warning** — if you invoke pi's `/compact`, a one-time note explains why this tool prefers branch/merge/crop (it never blocks you).
 
-A `~` in front of the percentage means it's the chars/4 *estimate* (pi reports zero usage right after a session loads, before the first fresh turn).
+**Honest while warming up:** pi reports zero usage right after a session loads, so until the first fresh turn the gauge shows the band word + a coarse `~Nk est` rather than a fake-precise percent — it switches to pi's exact number once a turn lands.
 
 ## 7. Recovering cropped or dropped content
 
-Nothing is ever destroyed. A crop or turn-removal **branches at an anchor** and writes a reconstruction block; the originals stay on the **previous branch**. Open `/panel`, find the pre-crop fork in the tree, and `⏎` to jump back to it — the full original content is there. The `sha8` in each `[cropped: …]` / `[dropped turn — …]` marker is the recovery handle.
+Nothing is ever destroyed. A crop or turn-removal **branches at an anchor** and writes a reconstruction block; the originals stay on the **previous branch**. The quickest way back is **`/undo`** — it re-opens/restores the last mutation in one keystroke. Or do it by hand: open `/panel`, find the pre-crop fork in the tree, and `⏎` to jump back to it — the full original content is there. The `sha8` in each `[cropped: …]` / `[dropped turn — …]` marker is the recovery handle.
 
 ## 8. Forest — across all your projects
 
@@ -148,7 +157,9 @@ pitree ui              # pick a session → open the panel read-only (never writ
 
 ## 9. Tips & gotchas
 
-- **Squash is the 99% path.** `/branch` + `/merge` keeps the trunk clean. Reach for `/crop` only for the occasional giant tool/MCP result.
+- **Squash is the 99% path.** `/branch` + bare `/merge` keeps the trunk clean. Reach for `/crop` only for the occasional giant tool/MCP result.
+- **`/undo` is your safety net — crop boldly.** Every mutation is one keystroke from reverting (append-only), so you never have to crop timidly.
+- **Let the gauge point you.** When it shows `▲ +24% (chrome.snapshot)`, `/crop --top` stubs exactly that, no panel needed.
 - **The editor gate is real.** Save the decision record to confirm a squash; close it empty to abort.
 - **Branch onto a cheap model** for grind work; the trunk model is restored on merge automatically.
 - **Watch the gauge bar.** When it turns orange, branch or crop *before* it goes red.
