@@ -37,16 +37,16 @@ TDD (tests before implementation, red→green per module) · **commit after ever
 **P0 — manual acceptance (needs Naveen's terminal, ~15 min, spec §4 Scenarios A–F):**
 1. Scenario A end-to-end in a real project: `/branch test-drive` → 2–3 turns → `/merge` → squash → edit record → save. Watch for:
    (a) ~~does the ◆ record appear immediately after squash~~ — **RESOLVED**: `deliverAs:"nextTurn"` never persisted it (in-memory only, lost on quit); fixed to plain `{triggerTurn:false}` and pinned by the squash golden (architecture §11.1).
-   (b) **overlay sizing/feel** — the PTY walk (test/golden/tui-pty.test.ts) proves it opens, renders every view and closes cleanly at 45×120; what remains is the subjective judgment (does 95% width feel right, resize behavior).
-   (c) **no pi summarize-on-leave prompt** during merge in the TUI (verified in RPC mode by the goldens; TUI prompt path still unseen — architecture §11.4).
-   (d) gauge correctness right after merge/crop (§11.5 — does `getContextUsage()` count the fresh `custom_message` immediately).
+   (b) ~~overlay sizing/feel~~ — **RESOLVED**: full-screen now (width 100%, body padded to terminal rows, constant height); margin bleed seen in the first acceptance screenshots is gone. Resize behavior remains a quick eyeball.
+   (c) ~~no pi summarize-on-leave prompt during merge in the TUI~~ — **RESOLVED** (§11.4): the PTY walk drives a real-TUI /merge --discard; no prompt, close marker lands in the file.
+   (d) ~~gauge correctness right after merge/crop~~ — **RESOLVED** (§11.5): pi reports zero usage until a fresh assistant turn; both the panel gauge and the ambient footer now fall back to the chars/4 estimate (marked ~) on non-empty sessions.
 2. Scenario D/E: `/crop` on a session with a fat tool result (try both the panel flow and `/crop --auto --apply`); `/panel` keybindings sweep against the mockup.
 3. File issues for whatever feels wrong; fix; commit per fix.
 
 **P1 — engineering backlog (priority order):**
 1. ~~RPC golden-file integration tests~~ **DONE** — squash/discard/tournament/crop goldens, byte-stable, keyless.
 2. ~~CI~~ **DONE** — three lanes; first run happens on push (check Actions tab; private repo consumes minutes quota).
-3. Polish from known v1 limitations: Ctrl+T opens the panel with a non-command context → mutating actions denied with a notify (use `/panel` for full power) — investigate a command-bridge; `registerMessageRenderer` for pretty ◆ decision cards (currently plain `custom_message` rendering); model-name autocomplete for `/branch` (needs ctx in completion API); panel reopen-after-action (currently one action per open); `/decisions` outside TUI mode.
+3. ~~Polish from known v1 limitations~~ **DONE** except the Ctrl+T command-bridge: ◆ decision cards via registerMessageRenderer ✓; /branch model autocomplete via a remembered-ctx bridge ✓; panel reopens after actions ✓; /decisions text fallback outside the TUI ✓. **Command-bridge conclusion (investigated):** pi 0.79.1 has no command-invoke API and `sendUserMessage` bypasses slash-command parsing — Ctrl+T stays view-only until upstream adds one (file alongside item 4).
 4. **Upstream PR to pi**: `branchWithFilteredHistory(fromId, excludeIds)` (or extension-level message append) — replaces the crop reconstruction-block compromise with true per-entry filtered history (architecture §9, option 5). File early; adopt when merged. *(Also worth filing: the `deliverAs:"nextTurn"` while-idle semantics are easy to misuse — docs or API tweak.)*
 5. Publishing: npm / pi package gallery needs `peerDependencies: "*"` for `@earendil-works/*` (per pi packages.md — currently pinned hard deps, fine for git installs), `pi-package` gallery metadata (image/video), and a decision on repo visibility (currently private).
 

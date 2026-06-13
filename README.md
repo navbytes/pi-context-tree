@@ -28,7 +28,7 @@ Labels the current point (mirrored into pi's native labels — it doubles as a c
 
 ```
 /branch fix-flaky-test               # branch at the current leaf
-/branch fix-flaky-test haiku-4.5     # …and run the branch on haiku (bare id or provider/id)
+/branch fix-flaky-test haiku-4.5     # …and run the branch on haiku (bare id or provider/id; Tab completes)
 ```
 
 ### `/merge [--squash | --no-llm | --discard | --tournament] [note…]`
@@ -49,7 +49,7 @@ Auto rules: ≥ `--min-tokens` (default 10k), older than `--older-than` assistan
 Applying branches at the anchor and writes ONE `ctree/crop-tail` reconstruction block (kept content + `[cropped: tool arg, ~tokens, sha8]` stubs) plus a `ctree/crop` marker. Originals stay in the JSONL, recoverable forever.
 
 ### `/panel` (also `Ctrl+T`) and `/decisions`
-The full-screen context panel (an overlay over pi). `/decisions` opens it straight on the decisions view. One action per open: pick a mutation (jump/branch/merge/crop-apply) and it executes back in command context after re-validating the session. `Ctrl+T` opens view-only in 0.79.1 (shortcuts get no command context) — use `/panel` for mutations.
+The full-screen context panel (an overlay over pi). `/decisions` opens it straight on the decisions view (and prints a text listing where no TUI is available, e.g. RPC mode). The panel stays up across actions: pick a mutation (jump/branch/merge/crop-apply), it executes in command context after re-validating the session, and the panel reopens with fresh state until you close it. `Ctrl+T` opens view-only in 0.79.1 (shortcuts get no command context and pi has no command-invoke API) — use `/panel` for mutations.
 
 #### Panel keys (all views: `q` close · `esc` back/close · `↑↓`/`j k` move · `g G` top/bottom)
 
@@ -67,6 +67,7 @@ The full-screen context panel (an overlay over pi). `/decisions` opens it straig
 - Branch status colors: open green · dangling yellow (open fork, no close marker — branch hygiene smell) · squashed blue · rejected/discarded red.
 - Gauge bands at 5/15/40%: `<5%` low · `5–15%` healthy · `15–40%` filling · `>40%` red.
 - `← you are here` marks the open fork you'd merge; `◀ leaf` marks the entry context currently ends at.
+- In the chat itself, ◆ decision records render as cards (title · date · human-confirmed ✓ · outcome · red ✗ epitaphs).
 
 ### Ambient (outside the panel)
 Footer status `⎇ branch · ctx N% band`, terminal title `project (branch) (pi)` color-hashed per branch, a one-time nudge when context crosses 40%, and a philosophy warning on `/compact` (compaction summarizes lossily — consider `/branch`/`/merge`/`/crop` instead).
