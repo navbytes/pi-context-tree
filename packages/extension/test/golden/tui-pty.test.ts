@@ -203,7 +203,10 @@ describe.skipIf(!PI || !EXPECT)("real pi TUI in a PTY (mockup keymap walk)", () 
 		const entries = readFileSync(sessionFile, "utf8")
 			.trim()
 			.split("\n")
-			.map((l) => JSON.parse(l) as { type?: string; customType?: string; content?: string; data?: Record<string, unknown> });
+			.map(
+				(l) =>
+					JSON.parse(l) as { type?: string; customType?: string; content?: string; data?: Record<string, unknown> },
+			);
 
 		// the removal wrote a ctree/crop marker carrying the dropped turn
 		const marker = entries.find((e) => e.customType === "ctree/crop");

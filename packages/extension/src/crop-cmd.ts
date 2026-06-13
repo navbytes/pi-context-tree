@@ -94,7 +94,8 @@ export async function applyCropPlan(pi: PiLike, ctx: CmdCtxLike, plan: CropPlan)
 function cropAppliedMessage(plan: CropPlan): string {
 	const parts: string[] = [];
 	if (plan.dropped.length) parts.push(`removed ${plan.dropped.length} turn${plan.dropped.length === 1 ? "" : "s"}`);
-	if (plan.stubs.length) parts.push(`cropped ${plan.stubs.length} entr${plan.stubs.length === 1 ? "y" : "ies"} → stubs`);
+	if (plan.stubs.length)
+		parts.push(`cropped ${plan.stubs.length} entr${plan.stubs.length === 1 ? "y" : "ies"} → stubs`);
 	return `✂ ${parts.join(" + ") || "nothing"} · ~${fmtTokens(plan.reclaimTokens)} reclaimed · originals on the previous branch`;
 }
 
