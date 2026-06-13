@@ -5,7 +5,15 @@
  * after re-validation (TRD §6).
  */
 
-import type { PanelAction, PanelInput, PanelView } from "@pi-context-tree/core";
+import {
+	type CtreeDecisionDetails,
+	type PanelAction,
+	type PanelInput,
+	type PanelView,
+	SessionTree,
+	decisionsOnPath,
+	textOfContent,
+} from "@pi-context-tree/core";
 import { ContextPanel } from "@pi-context-tree/tui";
 import { type CmdCtxLike, type CtxLike, type Deps, type PiLike, leafIdOf, projectName } from "./adapter.ts";
 import { entriesOf } from "./adapter.ts";
@@ -63,6 +71,26 @@ export async function openPanel(
 
 function isCmdCtx(ctx: CtxLike): ctx is CmdCtxLike {
 	return typeof (ctx as CmdCtxLike).navigateTree === "function";
+}
+
+/** /decisions without a TUI host (RPC/headless): compact text listing, newest first. */
+function notifyDecisions(ctx: CtxLike): void {
+	const entries = entriesOf(ctx);
+	const tree = SessionTree.fromEntries(entries);
+	const leafId = leafIdOf(ctx) ?? tree.fileLeafId();
+	const decs = leafId ? decisionsOnPath(tree, leafId) : [];
+	if (decs.length === 0) {
+		ctx.ui.notify("no decision records on this trunk yet — /merge → squash creates them (F7)", "info");
+		return;
+	}
+	const lines = [...decs].reverse().map((d) => {
+		const det = d.details as CtreeDecisionDetails | undefined;
+		const text = textOfContent(d.content);
+		const outcome = text.split("\n").find((l) => l.startsWith("**Outcome:**")) ?? text.split("\n")[0] ?? "";
+		const date = (d.timestamp ?? "").slice(0, 10);
+		return `◆ ${det?.branchName ?? "decision"} (${date}) ${outcome.replace("**Outcome:**", "").trim()}`;
+	});
+	ctx.ui.notify(lines.join("\n"), "info");
 }
 
 export async function executePanelAction(
@@ -128,6 +156,10 @@ export function registerPanel(pi: PiLike, deps: Deps): void {
 	pi.registerCommand("decisions", {
 		description: "pi-context-tree: decision records on the current trunk (F7)",
 		handler: async (_args, ctx) => {
+			if (!ctx.ui.custom) {
+				notifyDecisions(ctx);
+				return;
+			}
 			const action = await openPanel(pi, ctx, { initialView: "decisions" });
 			await executePanelAction(pi, ctx, action, deps);
 		},

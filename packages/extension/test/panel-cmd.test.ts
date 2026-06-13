@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { openPanel } from "../src/panel-cmd.ts";
+import { openPanel, registerPanel } from "../src/panel-cmd.ts";
 import { makeFake } from "./fake-pi.ts";
 
 interface CapturedMount {
@@ -27,6 +27,40 @@ describe("openPanel overlay host", () => {
 		expect(captured.options?.overlayOptions?.width).toBe("100%");
 		// 40 terminal rows minus panel chrome (header, gauge, dividers, secthead, footer, notify, scroll hint)
 		expect(captured.panel?.opts?.maxBody).toBe(31);
+	});
+
+	it("lists records as text when the panel host is unavailable (/decisions outside the TUI)", async () => {
+		const w = makeFake(); // FakeUi has no ui.custom by default — same as pi RPC/headless
+		w.session.user("kickoff");
+		const a = w.session.assistant("plan");
+		w.session.append({
+			type: "custom",
+			customType: "ctree/fork",
+			data: { v: 1, name: "feat-x", parentEntryId: a, trunkModel: "anthropic/opus-4.8", status: "open" },
+		});
+		w.session.append({
+			type: "custom_message",
+			customType: "ctree/decision",
+			content: "## Decision: feat-x\n**Outcome:** tmpdir collision fixed.",
+			display: true,
+			details: { v: 1, forkEntryId: "x003", branchName: "feat-x" },
+		});
+		registerPanel(w.pi, { draft: async () => "unused" });
+
+		await w.commands.get("decisions")?.("", w.ctx);
+
+		const notes = w.ui.notes().join("\n");
+		expect(notes).toContain("◆ feat-x");
+		expect(notes).toContain("tmpdir collision fixed");
+		expect(notes).not.toContain("needs pi's interactive TUI");
+	});
+
+	it("says so when there are no records to list", async () => {
+		const w = makeFake();
+		w.session.user("kickoff");
+		registerPanel(w.pi, { draft: async () => "unused" });
+		await w.commands.get("decisions")?.("", w.ctx);
+		expect(w.ui.notes().some((n) => n.includes("no decision records"))).toBe(true);
 	});
 
 	it("falls back to a sane body size when the host exposes no terminal dims", async () => {
