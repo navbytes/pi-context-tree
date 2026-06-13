@@ -6,7 +6,16 @@
  */
 
 import { aggregateConsumers } from "../consumers.ts";
-import { type CropCandidate, type CropPlan, autoSelect, cropCandidates, planCrop } from "../crop.ts";
+import {
+	type ContextTurn,
+	type CropCandidate,
+	type CropPlan,
+	autoSelect,
+	contextTurns,
+	cropCandidates,
+	planCrop,
+	planRemoveTurns,
+} from "../crop.ts";
 import { type ForkInfo, type ForkPresentation, decisionsOnPath, extractForks, nearestOpenFork } from "../ctree.ts";
 import { type Band, band, estimateContextTokens, estimateEntryTokens, fmtTokens } from "../estimate.ts";
 import { serializeEntry, textOfContent } from "../serialize.ts";
@@ -54,7 +63,7 @@ export interface VmEffect {
 }
 
 export interface PanelRow {
-	kind: "entry" | "fork" | "crop" | "consumer" | "decision" | "inspect-line";
+	kind: "entry" | "fork" | "crop" | "turn" | "consumer" | "decision" | "inspect-line";
 	id?: string;
 	depth: number;
 	glyph: string;
@@ -76,6 +85,8 @@ export interface PanelRow {
 	age?: number;
 	// consumer rows
 	share?: number;
+	// turn rows
+	entryCount?: number;
 }
 
 export interface PanelHeader {
@@ -107,11 +118,15 @@ export class PanelVm {
 	private readonly forkById: Map<string, ForkInfo>;
 	private readonly slice: SessionEntry[];
 	private candidates: CropCandidate[] | null = null;
+	private turnsCache: ContextTurn[] | null = null;
 
 	view: PanelView;
 	sel = 0;
+	/** crop sub-mode: stub individual tool results, or remove whole Q&A turns */
+	private cropMode: "result" | "turn" = "result";
 	private readonly folds = new Map<string, boolean>();
 	private readonly marks = new Set<string>();
+	private readonly turnMarks = new Set<string>();
 	private armedId: string | null = null;
 	private inspectId: string | null = null;
 
@@ -159,7 +174,7 @@ export class PanelVm {
 			case "tree":
 				return this.treeRows();
 			case "crop":
-				return this.cropRows();
+				return this.cropMode === "turn" ? this.turnRows() : this.cropRows();
 			case "consumers":
 				return this.consumerRows();
 			case "decisions":
@@ -304,6 +319,31 @@ export class PanelVm {
 	private getCandidates(): CropCandidate[] {
 		if (!this.candidates) this.candidates = this.leafId ? cropCandidates(this.tree, this.leafId) : [];
 		return this.candidates;
+	}
+
+	private getTurns(): ContextTurn[] {
+		if (!this.turnsCache) this.turnsCache = this.leafId ? contextTurns(this.tree, this.leafId) : [];
+		return this.turnsCache;
+	}
+
+	/** the turn you're currently in (contains the leaf) — protected from removal */
+	private currentTurnId(): string | undefined {
+		return this.getTurns().find((t) => t.entryIds.includes(this.leafId))?.userId;
+	}
+
+	private turnRows(): PanelRow[] {
+		const current = this.currentTurnId();
+		return this.getTurns().map((t) => ({
+			kind: "turn" as const,
+			id: t.userId,
+			depth: 0,
+			glyph: "●",
+			text: `user: ${t.label}`,
+			tokens: t.estTokens,
+			entryCount: t.entryIds.length,
+			marked: this.turnMarks.has(t.userId),
+			protected: t.userId === current,
+		}));
 	}
 
 	private cropRows(): PanelRow[] {
@@ -492,50 +532,18 @@ export class PanelVm {
 		}
 
 		if (this.view === "crop") {
-			const cands = this.getCandidates();
-			const cand = cands[this.sel];
-			switch (key) {
-				case "space": {
-					if (readOnly) return this.deny();
-					if (!cand) return {};
-					if (this.marks.has(cand.entryId)) {
-						this.marks.delete(cand.entryId);
-						this.armedId = null;
-						return {};
-					}
-					if (cand.protected && this.armedId !== cand.entryId) {
-						this.armedId = cand.entryId;
-						return { notify: `${cand.tool} is the latest result of its tool — space again to crop it anyway (F3.3)` };
-					}
-					this.marks.add(cand.entryId);
-					this.armedId = null;
-					return {};
-				}
-				case "a": {
-					if (readOnly) return this.deny();
-					const ids = autoSelect(cands, {});
-					for (const id of ids) this.marks.add(id);
-					return { notify: `--auto marked ${ids.length} (protected skipped) — review, then ⏎ to apply` };
-				}
-				case "enter": {
-					if (readOnly) return this.deny();
-					if (this.marks.size === 0) return { notify: "nothing marked — space to mark entries" };
-					const plan = planCrop(this.tree, this.leafId, [...this.marks]);
-					return { action: { type: "crop-apply", plan, dryRun: this.input.dryRun ?? false } };
-				}
-				case "c":
-					this.setView("tree");
-					return {};
+			if (key === "t") {
+				this.cropMode = this.cropMode === "turn" ? "result" : "turn";
+				this.sel = 0;
+				this.armedId = null;
+				return {};
 			}
-			return {};
+			return this.cropMode === "turn" ? this.handleTurnKey(key, readOnly) : this.handleCropKey(key, readOnly);
 		}
 
 		if (this.view === "decisions") {
 			if (key === "enter") {
-				const row = this.selectedRow();
-				if (!row?.id) return {};
-				if (readOnly) return this.deny();
-				return { action: { type: "jump", entryId: row.id } };
+				return this.handleDecisionsEnter(readOnly);
 			}
 			return {};
 		}
@@ -554,6 +562,7 @@ export class PanelVm {
 				const id = this.inspectId;
 				if (id && this.getCandidates().some((c) => c.entryId === id)) {
 					this.marks.add(id);
+					this.cropMode = "result";
 					this.setView("crop");
 					return { notify: "pre-marked from inspector — review, then ⏎ to apply" };
 				}
@@ -565,6 +574,79 @@ export class PanelVm {
 		return {};
 	}
 
+	private handleCropKey(key: string, readOnly: boolean): VmEffect {
+		const cands = this.getCandidates();
+		const cand = cands[this.sel];
+		switch (key) {
+			case "space": {
+				if (readOnly) return this.deny();
+				if (!cand) return {};
+				if (this.marks.has(cand.entryId)) {
+					this.marks.delete(cand.entryId);
+					this.armedId = null;
+					return {};
+				}
+				if (cand.protected && this.armedId !== cand.entryId) {
+					this.armedId = cand.entryId;
+					return { notify: `${cand.tool} is the latest result of its tool — space again to crop it anyway (F3.3)` };
+				}
+				this.marks.add(cand.entryId);
+				this.armedId = null;
+				return {};
+			}
+			case "a": {
+				if (readOnly) return this.deny();
+				const ids = autoSelect(cands, {});
+				for (const id of ids) this.marks.add(id);
+				return { notify: `--auto marked ${ids.length} (protected skipped) — review, then ⏎ to apply` };
+			}
+			case "enter": {
+				if (readOnly) return this.deny();
+				if (this.marks.size === 0) return { notify: "nothing marked — space to mark entries" };
+				const plan = planCrop(this.tree, this.leafId, [...this.marks]);
+				return { action: { type: "crop-apply", plan, dryRun: this.input.dryRun ?? false } };
+			}
+			case "c":
+				this.setView("tree");
+				return {};
+		}
+		return {};
+	}
+
+	private handleTurnKey(key: string, readOnly: boolean): VmEffect {
+		const turns = this.getTurns();
+		const turn = turns[this.sel];
+		switch (key) {
+			case "space": {
+				if (readOnly) return this.deny();
+				if (!turn) return {};
+				if (turn.userId === this.currentTurnId()) {
+					return { notify: "that's the current turn (you're in it) — can't remove it" };
+				}
+				if (this.turnMarks.has(turn.userId)) this.turnMarks.delete(turn.userId);
+				else this.turnMarks.add(turn.userId);
+				return {};
+			}
+			case "enter": {
+				if (readOnly) return this.deny();
+				if (this.turnMarks.size === 0) return { notify: "no turns marked — space to mark a whole Q&A turn" };
+				const plan = planRemoveTurns(this.tree, this.leafId, [...this.turnMarks]);
+				return { action: { type: "crop-apply", plan, dryRun: this.input.dryRun ?? false } };
+			}
+			case "c":
+				this.setView("tree");
+				return {};
+		}
+		return {};
+	}
+
+	private handleDecisionsEnter(readOnly: boolean): VmEffect {
+		const row = this.selectedRow();
+		if (!row?.id) return {};
+		if (readOnly) return this.deny();
+		return { action: { type: "jump", entryId: row.id } };
+	}
+
 	/** mockup secthead line under the divider; undefined = no section title (inspect) */
 	sectionTitle(): string | undefined {
 		switch (this.view) {
@@ -573,6 +655,12 @@ export class PanelVm {
 				return this.input.sessionName ? `SESSION ${this.input.sessionName} · ${base}` : base;
 			}
 			case "crop": {
+				if (this.cropMode === "turn") {
+					const reclaim = this.getTurns()
+						.filter((t) => this.turnMarks.has(t.userId))
+						.reduce((sum, t) => sum + t.estTokens, 0);
+					return `REMOVE WHOLE TURNS — question + its answers drop together · reclaim ~${fmtTokens(reclaim)} · originals kept on the previous branch`;
+				}
 				const cands = this.getCandidates();
 				const reclaim = [...this.marks].reduce(
 					(sum, id) => sum + (cands.find((c) => c.entryId === id)?.estTokens ?? 0),
@@ -594,7 +682,9 @@ export class PanelVm {
 			case "tree":
 				return "↑↓/jk move · ⏎ jump/fold · b branch · m merge · c crop · i inspect · D decisions · u consumers · q close";
 			case "crop":
-				return "space mark · a auto · ⏎ apply → new branch point · esc back · q close";
+				return this.cropMode === "turn"
+					? "space mark whole turn · ⏎ apply → new branch point · t results mode · esc back · q close"
+					: "space mark · a auto · ⏎ apply → new branch point · t turn mode · esc back · q close";
 			case "consumers":
 				return "c crop the big ones · esc back · q close";
 			case "decisions":

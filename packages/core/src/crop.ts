@@ -264,8 +264,14 @@ export function stubLine(s: CtreeCropStub): string {
 	return `[cropped: ${s.tool}${arg}, ~${fmtTokens(s.estTokens)}, ${s.sha8}]`;
 }
 
+/**
+ * In-context marker for a removed turn. Deliberately label-free: echoing the
+ * dropped question back into context would re-inject what the user removed
+ * (e.g. a rejected approach). The human-readable label is kept in the
+ * ctree/crop marker's dropped[] for the panel. sha8 is the recovery handle.
+ */
 export function dropLine(d: CtreeCropDrop): string {
-	return `[dropped turn: "${d.label}" — ${d.entryIds.length} entries, ~${fmtTokens(d.estTokens)}, ${d.sha8} — recoverable on the previous branch]`;
+	return `[dropped turn — ${d.entryIds.length} entries, ~${fmtTokens(d.estTokens)}, recoverable: ${d.sha8}]`;
 }
 
 /**

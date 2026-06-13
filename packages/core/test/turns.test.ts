@@ -94,13 +94,14 @@ describe("renderReconstruction with dropped turns", () => {
 		const plan = planRemoveTurns(tree, ids.a3, [ids.u2]);
 		const text = renderReconstruction(tree, ids.a3, plan);
 
-		// the removed turn's ANSWER and tool body are gone (the question survives only as a note ref)
+		// the removed turn is gone entirely — question text NOT echoed back into context
+		expect(text).not.toContain("now suspend the noisy ones");
 		expect(text).not.toContain("done, 41 tabs suspended");
 		expect(text).not.toContain("SNAP-SNAP-");
-		// a single drop note marks where it was, recoverable, echoing the question label
-		expect(text).toContain('[dropped turn: "now suspend the noisy ones"');
-		expect(text).toContain("recoverable on the previous branch");
-		expect((text.match(/\[dropped turn:/g) ?? []).length).toBe(1);
+		// a single label-free drop note marks where it was, with a recovery handle
+		expect(text).toContain("[dropped turn — ");
+		expect(text).toContain("recoverable:");
+		expect((text.match(/\[dropped turn —/g) ?? []).length).toBe(1);
 		// the later turn survives verbatim
 		expect(text).toContain("thanks");
 		expect(text).toContain("you're welcome");
@@ -114,6 +115,6 @@ describe("renderReconstruction with dropped turns", () => {
 		expect(text).not.toContain("you're welcome"); // u3's answer gone
 		expect(text).toContain("now suspend the noisy ones"); // the un-removed middle turn stays live
 		expect(text).toContain("done, 41 tabs suspended");
-		expect((text.match(/\[dropped turn:/g) ?? []).length).toBe(2);
+		expect((text.match(/\[dropped turn —/g) ?? []).length).toBe(2);
 	});
 });

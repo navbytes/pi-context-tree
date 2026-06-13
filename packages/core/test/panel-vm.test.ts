@@ -283,6 +283,71 @@ describe("PanelVm decisions cards (mockup contract)", () => {
 	});
 });
 
+describe("PanelVm crop turn-mode (remove whole Q&A turns)", () => {
+	function turnVm(overrides: Record<string, unknown> = {}) {
+		const b = new SessionBuilder();
+		const u1 = b.user("first question");
+		b.assistant("first answer");
+		const u2 = b.user("second question — the fat one");
+		b.toolUse("chrome.snapshot", { url: "audit" }, filler(60_000));
+		b.assistant("second answer");
+		const u3 = b.user("third question");
+		const leaf = b.assistant("third answer");
+		const p = new PanelVm({ entries: b.build().entries, project: "p", contextWindow: 200_000, ...overrides });
+		p.handleKey("c"); // into crop
+		p.handleKey("t"); // toggle to turn mode
+		return { p, ids: { u1, u2, u3, leaf } };
+	}
+
+	it("toggles to turn rows; the current/leaf turn is protected", () => {
+		const { p, ids } = turnVm();
+		const rows = p.rows();
+		expect(rows.every((r) => r.kind === "turn")).toBe(true);
+		expect(rows.map((r) => r.id)).toEqual([ids.u1, ids.u2, ids.u3]);
+		expect(rows.find((r) => r.id === ids.u2)?.text).toContain("second question");
+		expect(rows.find((r) => r.id === ids.u2)?.entryCount).toBe(4); // user + assistant(call) + result + assistant answer
+		expect(rows.find((r) => r.id === ids.u3)?.protected).toBe(true); // contains the leaf
+		expect(p.sectionTitle()).toContain("REMOVE WHOLE TURNS");
+	});
+
+	it("marks a whole turn with space and applies planRemoveTurns on enter", () => {
+		const { p, ids } = turnVm();
+		while (p.rows()[p.sel]?.id !== ids.u2) p.handleKey("j");
+		p.handleKey("space");
+		expect(p.rows().find((r) => r.id === ids.u2)?.marked).toBe(true);
+		expect(p.sectionTitle()).toMatch(/reclaim ~1[0-9]k/);
+
+		const eff = p.handleKey("enter");
+		expect(eff.action?.type).toBe("crop-apply");
+		if (eff.action?.type === "crop-apply") {
+			expect(eff.action.plan.dropped.map((d) => d.userId)).toEqual([ids.u2]);
+			expect(eff.action.plan.stubs).toEqual([]);
+		}
+	});
+
+	it("refuses to mark the protected current turn", () => {
+		const { p, ids } = turnVm();
+		while (p.rows()[p.sel]?.id !== ids.u3) p.handleKey("j");
+		const eff = p.handleKey("space");
+		expect(eff.notify).toMatch(/current turn/i);
+		expect(p.rows().find((r) => r.id === ids.u3)?.marked).toBeFalsy();
+	});
+
+	it("t toggles back to result mode", () => {
+		const { p } = turnVm();
+		p.handleKey("t");
+		expect(p.sectionTitle()).toContain("TOOL/MCP RESULTS");
+		expect(p.rows().every((r) => r.kind === "crop")).toBe(true);
+	});
+
+	it("read-only mode blocks turn marking", () => {
+		const { p, ids } = turnVm({ readOnly: true });
+		while (p.rows()[p.sel]?.id !== ids.u2) p.handleKey("j");
+		expect(p.handleKey("space").notify).toMatch(/read-only/);
+		expect(p.rows().find((r) => r.id === ids.u2)?.marked).toBeFalsy();
+	});
+});
+
 describe("PanelVm read-only mode (pitree)", () => {
 	it("blocks mutating actions with a notify", () => {
 		const { vm: p } = vm({ readOnly: true });
