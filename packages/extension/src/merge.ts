@@ -132,6 +132,7 @@ export async function mergeHandler(pi: PiLike, ctx: CmdCtxLike, args: string, de
 			forkEntryId: fork.entryId,
 			status: "discarded",
 			note: note?.trim() || undefined,
+			prevLeafId: state.leafId,
 		});
 		await restoreTrunkModel(pi, ctx, fork);
 		refreshAmbient(pi, ctx);
@@ -201,7 +202,13 @@ export async function mergeHandler(pi: PiLike, ctx: CmdCtxLike, args: string, de
 		{ triggerTurn: false },
 	);
 	const decisionEntryId = lastEntryId(ctx) ?? undefined;
-	pi.appendEntry(CTREE_CLOSE, { v: 1, forkEntryId: fork.entryId, status: "squashed", decisionEntryId });
+	pi.appendEntry(CTREE_CLOSE, {
+		v: 1,
+		forkEntryId: fork.entryId,
+		status: "squashed",
+		decisionEntryId,
+		prevLeafId: state.leafId,
+	});
 	for (const r of rejected) {
 		const sib = siblings.find((s) => s.data.name === r.name);
 		if (sib) pi.appendEntry(CTREE_CLOSE, { v: 1, forkEntryId: sib.entryId, status: "rejected", note: r.reason });

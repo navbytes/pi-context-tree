@@ -250,6 +250,8 @@ export interface CtreeCloseData {
 	status: CtreeCloseStatus;
 	decisionEntryId?: string;
 	note?: string;
+	/** the leaf at the moment of merge (the branch tip) — /undo navigates back here to re-open the branch */
+	prevLeafId?: string;
 }
 
 export interface CtreeCropStub {
