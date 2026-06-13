@@ -87,7 +87,7 @@ The full-screen context panel — the tree with token costs, branch status color
 
 ## Status & compatibility
 
-**Maturity:** early but functional — every command and panel view works against the pinned pi, covered by golden and real-TUI tests (see [Development](#development)). v0.1.0 isn't tagged yet, so installs track the default branch and the surface may still shift before the first release. Bug reports and feedback are very welcome.
+**Maturity:** **v0.1.0 — the first public release.** Every command and panel view works against the pinned pi, covered by golden and real-TUI tests (see [Development](#development)). Bug reports and feedback are very welcome.
 
 **pi version:** pinned to `@earendil-works/*@0.79.1`. A non-blocking CI lane runs the full integration suite against `pi@latest` to catch API drift early — but newer pi (0.80+) isn't officially supported yet. If something breaks on a newer pi, please [open an issue](https://github.com/navbytes/pi-context-tree/issues).
 
@@ -101,7 +101,7 @@ pi install git:github.com/navbytes/pi-context-tree
 pi remove git:github.com/navbytes/pi-context-tree
 ```
 
-> No tagged release yet — installs track the default branch. For a reproducible install, pin to a commit SHA (`…/pi-context-tree@<sha>`). See [Status &amp; compatibility](#status--compatibility).
+> For a reproducible install, pin to a release: `pi install git:github.com/navbytes/pi-context-tree@v0.1.0`. Without an `@tag` it tracks the default branch. See [Status &amp; compatibility](#status--compatibility).
 
 <details>
 <summary>Development tree &amp; standalone CLI</summary>
@@ -230,7 +230,7 @@ Flags dangling branches (open forks with no close marker) across every project. 
 
 **Does this ever rewrite or delete my session?** No — every change is append-only. `/merge` and `/crop` add new entries and the originals stay recoverable on the previous branch, verified by byte-for-byte golden tests against real pi.
 
-**`pi install …@v0.1.0` fails.** There's no tagged release yet; install without the `@v0.1.0` pin (it tracks the default branch). See [Status &amp; compatibility](#status--compatibility).
+**How do I pin a version?** `pi install git:github.com/navbytes/pi-context-tree@v0.1.0` installs a specific tagged release; without the `@tag` it tracks the default branch and updates whenever you reinstall.
 
 ## Development
 
