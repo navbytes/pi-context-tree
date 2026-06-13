@@ -69,6 +69,15 @@ export interface PiLike {
 	setLabel(entryId: string, label: string | undefined): void;
 	setModel(model: ModelLike): Promise<boolean>;
 	getSessionName?(): string | undefined;
+	/** pretty rendering for custom_message entries in the chat (pi ≥0.79) */
+	registerMessageRenderer?<T = unknown>(
+		customType: string,
+		renderer: (
+			message: { customType: string; content: string; details?: T; timestamp?: number },
+			options: { expanded: boolean },
+			theme: unknown,
+		) => { render(width: number): string[] } | undefined,
+	): void;
 }
 
 /** Drafting dependency — real implementation calls the branch model via pi-ai. */
