@@ -260,10 +260,25 @@ export interface CtreeCropStub {
 	sha8: string;
 }
 
+/** A whole Q&A turn removed from context (question + its answers, dropped together). */
+export interface CtreeCropDrop {
+	/** the opening user message id */
+	userId: string;
+	/** every entry id removed with the turn */
+	entryIds: string[];
+	/** first line of the question (display) */
+	label: string;
+	estTokens: number;
+	/** hash of the removed bodies — recoverability proof */
+	sha8: string;
+}
+
 export interface CtreeCropData {
 	v: 1;
 	sourceLeafId: string;
 	stubbed: CtreeCropStub[];
+	/** present only when whole turns were removed (not just tool results stubbed) */
+	dropped?: CtreeCropDrop[];
 }
 
 export interface CtreeDecisionDetails {
