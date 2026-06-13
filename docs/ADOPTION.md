@@ -35,7 +35,7 @@ Packaging rules that gate npm/gallery (from pi's `docs/packages.md`): core `@ear
 6. **List it.** PR to the community extension lists; announce in Discord. Drafts in the appendix.
 
 ### P2 — convert and retain (agent-doable)
-7. **Sharpen the README "why."** ✅ hero/quickstart landed; consider a short before/after context-rot framing once the GIF exists.
+7. **Sharpen the README "why."** ✅ Done — industry-standard layout (TOC, Why with the research, Features, Screenshots, Requirements, Usage, Roadmap, Acknowledgements), static panel screenshot. A before/after GIF is the remaining piece (P1.5, owner).
 8. **Lower first-run friction.** A one-paragraph "uninstall the dev tree first" note already exists; verify the happy path on a clean machine after going public.
 9. **Surface the panel.** `Ctrl+T` opens view-only today (pi 0.79.1 has no command-invoke API). Track upstream; when it lands, make the shortcut mutate.
 
@@ -76,10 +76,10 @@ Show, in order: the gauge bar above the prompt → `/branch fix-flaky-test haiku
 
 ## Done in this pass (2026-06-13)
 - ✅ MIT `LICENSE` (legal blocker removed), `CONTRIBUTING.md`, `CHANGELOG.md`.
-- ✅ README adoption hero: banner, badges, one-line value prop, 30-second quickstart, command table; re-homed docs.
+- ✅ README rebuilt to a standard OSS layout: banner, badges (incl. CI), table of contents, Why (with the research), Features, Screenshots (banner + static panel SVG), Requirements, Install (with release-pin + collapsible dev section), Quickstart, Usage, Panel, How it works, Development, Roadmap, Docs, Contributing, License, Acknowledgements.
 - ✅ pi-package discovery metadata: `license`/`author`/`repository`/`bugs`/`homepage`, expanded `keywords`; version → 0.1.0.
 - ✅ Packaging compliance: core `@earendil-works/*` → `peerDependencies: "*"` (extension + tui), pinned in devDeps; full suite incl. real-pi goldens stays green.
-- ✅ GitHub issue/PR templates.
+- ✅ GitHub issue/PR templates; [`PUBLISHING.md`](PUBLISHING.md) release/npm/gallery runbook.
 
 ## Appendix — copy-paste drafts
 

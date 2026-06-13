@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format is based on
 ### Added
 - `LICENSE` (MIT), `CONTRIBUTING.md`, and this changelog.
 - Discovery metadata on the package manifest (`license`, `author`, `repository`, `bugs`, `homepage`, expanded `keywords`) and an SVG banner.
-- README adoption hero (banner, badges, value prop, 30-second quickstart).
-- [`docs/ADOPTION.md`](docs/ADOPTION.md) — adoption plan + turnkey owner checklist.
+- README restructured to a standard OSS layout (banner, badges incl. CI, table of contents, Why, Features, Screenshots, Requirements, Install, Quickstart, Usage, Panel, How it works, Roadmap, Acknowledgements) + a static panel "screenshot" SVG.
+- [`docs/ADOPTION.md`](docs/ADOPTION.md) — adoption plan + turnkey owner checklist; [`docs/PUBLISHING.md`](docs/PUBLISHING.md) — release/npm/gallery runbook.
 - GitHub issue and pull-request templates.
 
 ### Changed
