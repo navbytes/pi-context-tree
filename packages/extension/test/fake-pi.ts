@@ -5,7 +5,7 @@
  */
 
 import type { AgentMessage, SessionEntry } from "@pi-context-tree/core";
-import type { CmdCtxLike, ModelLike, PiLike, UiLike } from "../src/adapter.ts";
+import type { CmdCtxLike, CtxLike, ModelLike, PiLike, UiLike } from "../src/adapter.ts";
 
 export class FakeSession {
 	entries: SessionEntry[] = [];
@@ -117,6 +117,7 @@ export interface FakeWorld {
 	};
 	commands: Map<string, (args: string, ctx: CmdCtxLike) => Promise<void> | void>;
 	completions: Map<string, ((prefix: string) => { value: string; label?: string }[] | null) | undefined>;
+	shortcuts: Map<string, (ctx: CtxLike) => Promise<void> | void>;
 }
 
 const KNOWN_MODELS: ModelLike[] = [
@@ -130,6 +131,7 @@ export function makeFake(): FakeWorld {
 	const session = new FakeSession();
 	const calls: FakeWorld["calls"] = { navigate: [], setModel: [], labels: [] };
 	const commands = new Map<string, (args: string, ctx: CmdCtxLike) => Promise<void> | void>();
+	const shortcuts = new Map<string, (ctx: CtxLike) => Promise<void> | void>();
 	const completions: FakeWorld["completions"] = new Map();
 	let currentModel: ModelLike = KNOWN_MODELS[0] as ModelLike;
 
@@ -138,7 +140,7 @@ export function makeFake(): FakeWorld {
 			commands.set(name, opts.handler);
 			completions.set(name, opts.getArgumentCompletions);
 		},
-		registerShortcut: () => {},
+		registerShortcut: (keyId, opts) => shortcuts.set(keyId, opts.handler),
 		on: () => {},
 		sendMessage: (m) =>
 			session.append({
@@ -178,7 +180,7 @@ export function makeFake(): FakeWorld {
 		getContextUsage: () => ({ tokens: 1200, contextWindow: 200_000, percent: 0.6 }),
 	};
 
-	return { pi, ctx, ui, session, calls, commands, completions };
+	return { pi, ctx, ui, session, calls, commands, completions, shortcuts };
 }
 
 export function entriesByType(session: FakeSession, type: string, customType?: string): SessionEntry[] {

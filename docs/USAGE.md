@@ -15,7 +15,7 @@ pi remove git:github.com/navbytes/pi-context-tree   # if already installed
 pi -e /path/to/pi-context-tree
 ```
 
-You'll know it's loaded when you see a **`CONTEXT …%` gauge bar above your prompt** and `⎇ trunk · ctx N%` in the footer. Commands available: `/branch` `/merge` `/crop` `/panel` `/decisions` (and `Ctrl+T`).
+You'll know it's loaded when you see a **`CONTEXT …%` gauge bar above your prompt** and `⎇ trunk · ctx N%` in the footer. Commands available: `/branch` `/merge` `/crop` `/panel` `/decisions` (and `Ctrl+Q`).
 
 ## 2. The idea in 30 seconds
 
@@ -105,8 +105,8 @@ Rules: ≥ `--min-tokens` (default 10k), older than `--older-than` turns (defaul
 
 **Remove a whole exchange (turn mode):** open `/crop`, press `t` to switch to turn mode, `space` to mark a question (its answers come with it), `⏎` to apply. Removing only the answer would orphan tool pairs, so turns drop together. The current turn and decision records are protected.
 
-### `/panel` · `/decisions` · `Ctrl+T`
-`/panel` opens the full-screen context panel; `/decisions` opens it on the decisions view (and prints a text list when there's no TUI). The panel stays up across actions and reopens with fresh state until you close it. `Ctrl+T` opens it **view-only** (a pi limitation — shortcuts get no command context) — use `/panel` to mutate.
+### `/panel` · `/decisions` · `Ctrl+Q`
+`/panel` opens the full-screen context panel; `/decisions` opens it on the decisions view (and prints a text list when there's no TUI). The panel stays up across actions and reopens with fresh state until you close it. `Ctrl+Q` opens it **view-only** (a pi limitation — shortcuts get no command context) — use `/panel` to mutate.
 
 ## 5. The context panel — keys
 

@@ -64,7 +64,7 @@ Branch went nowhere. `/merge` → **discard** → return to label, nothing injec
 Before branching, two giant MCP results (40k tokens) sit in the trunk. `/crop` opens the panel in crop mode: entries listed with token estimates, space to mark, shows total reclaimed, enter to apply. Result: stubs replace bodies on a new branch point; originals untouched.
 
 ### E — panel-driven session
-`Ctrl+T` (or `/panel`) inside pi → full-screen tree: nodes sized/annotated with tokens, branch labels colored by status, gauge in header. Navigate, jump to a node, start a branch from any node, open merge flow, inspect any entry's content, view all decision records, see top context consumers by tool.
+`Ctrl+Q` (or `/panel`) inside pi → full-screen tree: nodes sized/annotated with tokens, branch labels colored by status, gauge in header. Navigate, jump to a node, start a branch from any node, open merge flow, inspect any entry's content, view all decision records, see top context consumers by tool.
 
 ### F — forest review
 `pitree` prints all projects' trees with dangling branches flagged; `pitree ui` opens the same panel standalone in read-only forest mode.
@@ -93,7 +93,7 @@ Before branching, two giant MCP results (40k tokens) sit in the trunk. `/crop` o
 - F3.3 Apply = branch-with-filtered-history at the same point; stub format `[cropped: <tool> <primary-arg>, <size>, <sha-8>]`; `tool_use`/`tool_result` pairing always preserved; never crop the latest result of any tool unless explicitly marked.
 
 ### F4 Context Panel (the rich TUI)
-- F4.1 Launch: `/panel` command and a registered shortcut (default `Ctrl+T`, configurable) inside pi; `pitree ui` standalone.
+- F4.1 Launch: `/panel` command and a registered shortcut (default `Ctrl+Q`, configurable) inside pi; `pitree ui` standalone.
 - F4.2 Views: **Tree** (current session), **Forest** (standalone: all projects), **Decisions** (all decision records on trunk), **Consumers** (tokens aggregated by tool/entry type — makes MCP bloat visible), **Entry inspector** (full content of any node).
 - F4.3 Tree rendering: glyph per entry type; est. tokens per node; branch labels with status color (active/dangling/squashed/rejected); current leaf highlighted; collapsed-by-default closed branches.
 - F4.4 Keybindings (single keystroke): navigate ↑↓/jk, expand/collapse, `enter` jump leaf to node, `b` branch here, `m` merge flow, `c` crop mode, `i` inspect, `D` decisions, `u` consumers, `q`/`esc` close. Help footer always visible.
@@ -225,7 +225,7 @@ Unchanged from v0.1: the building agent needs **no** pre-existing local pi and *
 | # | Deliverable | Acceptance |
 |---|---|---|
 | M1 | `core`: parser, forest, estimator, fixtures | unit green incl. truncated/legacy/50MB |
-| M2 | **Spike:** full-screen `ui.custom({overlay:true})` panel host (hello-world via `/panel` + `Ctrl+T`) | overlay API verified public in 0.79.1 but flagged Experimental — spike validates full-screen sizing, key scoping, clean open/close during idle; fallback decision recorded |
+| M2 | **Spike:** full-screen `ui.custom({overlay:true})` panel host (hello-world via `/panel` + `Ctrl+Q`) | overlay API verified public in 0.79.1 but flagged Experimental — spike validates full-screen sizing, key scoping, clean open/close during idle; fallback decision recorded |
 | M3 | `/branch` + labels + model switch + title bar + gauge | integration: fork, label, model switch/restore verified |
 | M4 | `/merge` squash + discard + `--no-llm` + confirm/edit UI | golden files; trunk model restored; F2.5 interop verified |
 | M5 | Panel: Tree view + inspector + jump + branch-from-node | scenario E keybindings work; no agent-loop blocking |

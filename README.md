@@ -48,7 +48,7 @@ pi-context-tree treats the session like a **git repo**: the trunk is `master`, s
 | **`/branch <name> [model]`** | Label the current point and fork off — optionally onto a cheaper model for the side-quest. The trunk model is restored on merge. |
 | **`/merge`** | Close a branch: **squash** to a human-confirmed ◆ decision record, **discard** it, or run a **tournament** between sibling approaches (winner record + epitaphs for the losers). |
 | **`/crop`** | Surgically stub fat tool/MCP results, or drop a whole Q&A turn — **append-only**, originals always recoverable. Interactive panel or headless `--auto --apply`. |
-| **`/panel` (`Ctrl+T`)** | Full-screen TUI: the tree with per-node token costs, branch status colors, top context consumers, all decision records, and an entry inspector. |
+| **`/panel` (`Ctrl+Q`)** | Full-screen TUI: the tree with per-node token costs, branch status colors, top context consumers, all decision records, and an entry inspector. |
 | **Ambient health gauge** | A green→red context-health bar pinned above your prompt (band ticks at 5/15/40%), a color-hashed terminal title, and a one-time nudge before context rots. |
 | **`pitree`** | A standalone, **read-only** forest CLI across all your pi projects, with dangling-branch detection. |
 
@@ -154,9 +154,9 @@ Auto rules: ≥ `--min-tokens` (default 10k), older than `--older-than` assistan
 
 Both apply the same way: branch at the anchor, write ONE `ctree/crop-tail` reconstruction block plus a `ctree/crop` marker (`stubbed[]` and/or `dropped[]`). Originals stay in the JSONL, recoverable forever.
 
-### `/panel` (also `Ctrl+T`) and `/decisions`
+### `/panel` (also `Ctrl+Q`) and `/decisions`
 
-The full-screen context panel (an overlay over pi). `/decisions` opens it straight on the decisions view (and prints a text listing where no TUI is available, e.g. RPC mode). The panel stays up across actions: pick a mutation (jump/branch/merge/crop-apply), it executes in command context after re-validating the session, and the panel reopens with fresh state until you close it. `Ctrl+T` opens view-only in 0.79.1 (shortcuts get no command context and pi has no command-invoke API) — use `/panel` for mutations.
+The full-screen context panel (an overlay over pi). `/decisions` opens it straight on the decisions view (and prints a text listing where no TUI is available, e.g. RPC mode). The panel stays up across actions: pick a mutation (jump/branch/merge/crop-apply), it executes in command context after re-validating the session, and the panel reopens with fresh state until you close it. `Ctrl+Q` opens view-only in 0.79.1 (shortcuts get no command context and pi has no command-invoke API) — use `/panel` for mutations.
 
 ## The context panel
 
@@ -219,7 +219,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full conventions and the dev loop
 ## Roadmap
 
 - Upstream a `branchWithFilteredHistory` API to pi (replaces the crop reconstruction-block compromise with true per-entry filtered history).
-- Mutating actions from `Ctrl+T` once pi exposes a command-invoke API (view-only today).
+- Mutating actions from `Ctrl+Q` once pi exposes a command-invoke API (view-only today).
 - v2 (out of v1 scope): web dashboard, RPC-attach mutation for the standalone panel, scope-selector export, global zoom-out view.
 
 The full adoption/release plan and backlog live in [docs/ADOPTION.md](docs/ADOPTION.md) and [docs/HANDOVER.md](docs/HANDOVER.md).

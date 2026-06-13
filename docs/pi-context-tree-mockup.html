@@ -205,7 +205,7 @@ Try the loop: <b>u</b> see consumers → <b>c</b> crop the two snapshots (<b>spa
     <span class="k">j/k ↑↓</span> move · <span class="k">⏎</span> jump/fold · <span class="k">b</span> branch · <span class="k">m</span> merge ·
     <span class="k">c</span> crop · <span class="k">i</span> inspect · <span class="k">D</span> decisions · <span class="k">u</span> consumers ·
     <span class="k">f</span> forest · <span class="k">q</span> close panel<br>
-    <span style="color:var(--faint)">in pi: /panel or Ctrl+T (browser reserves Ctrl+T, mockup uses t)</span></div>
+    <span style="color:var(--faint)">in pi: /panel or Ctrl+Q (this mockup uses t — browsers reserve Ctrl+T)</span></div>
 </div>
 
 <script>
@@ -600,7 +600,7 @@ function renderAmbient(){
     '<div class="pbfoot">~/repos/'+PROJECT+' <span style="color:var(--txt)">●</span> '+PROJECT+(S.branch?' <span style="color:hsl('+hashHue(S.branch)+',60%,65%)">('+S.branch+')</span>':' <span style="color:var(--dim)">(trunk)</span>')+
     '<br>↑245 ↓1.2k R1.8M W42k $3.86 <span class="pct" style="background:'+bcol+'">'+pct.toFixed(1)+'%</span>/'+fmt(WINDOW)+' (auto)'+
     '<span class="right">claude-'+S.model.replace('.','-')+' <span style="color:var(--txt)">●</span> high</span>'+
-    '<br>MCP: 1/6 servers <span class="right" style="color:var(--faint)">prompt-border = context health (F5.2) · /panel or ⌃T reopens the panel · /compact shows a philosophy warning (F5.4)</span></div></div>';
+    '<br>MCP: 1/6 servers <span class="right" style="color:var(--faint)">prompt-border = context health (F5.2) · /panel or ⌃Q reopens the panel · /compact shows a philosophy warning (F5.4)</span></div></div>';
   return html;
 }
 

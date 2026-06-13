@@ -41,6 +41,54 @@ describe("panel reopens after an action (mockup: the panel stays up)", () => {
 	});
 });
 
+describe("panel keyboard shortcut", () => {
+	// Keys that pi binds (app + tui + tree) or the terminal eats as control chars.
+	// Our shortcut must avoid all of these or pi silently skips it (ctrl+t did).
+	const PI_BOUND_OR_RESERVED = new Set([
+		"ctrl+a",
+		"ctrl+b",
+		"ctrl+c",
+		"ctrl+d",
+		"ctrl+g",
+		"ctrl+l",
+		"ctrl+n",
+		"ctrl+o",
+		"ctrl+p",
+		"ctrl+r",
+		"ctrl+s",
+		"ctrl+t",
+		"ctrl+u",
+		"ctrl+v",
+		"ctrl+x",
+		"ctrl+z",
+		"ctrl+h",
+		"ctrl+i",
+		"ctrl+j",
+		"ctrl+m", // ASCII backspace/tab/enter(LF)/enter(CR)
+	]);
+
+	it("registers exactly ctrl+q — free in pi and deliverable in raw mode", () => {
+		const w = makeFake();
+		registerPanel(w.pi, { draft: async () => "" });
+		const keys = [...w.shortcuts.keys()];
+		expect(keys).toEqual(["ctrl+q"]);
+		expect(PI_BOUND_OR_RESERVED.has(keys[0] ?? ""), `${keys[0]} collides with a pi/terminal key`).toBe(false);
+	});
+
+	it("the shortcut opens the panel", async () => {
+		const w = makeFake();
+		w.session.user("hi");
+		let opened = false;
+		w.ui.custom = async <T>(): Promise<T> => {
+			opened = true;
+			return { type: "close" } as T;
+		};
+		registerPanel(w.pi, { draft: async () => "" });
+		await w.shortcuts.get("ctrl+q")?.(w.ctx);
+		expect(opened).toBe(true);
+	});
+});
+
 describe("openPanel overlay host", () => {
 	it("mounts full-screen: width 100% and body rows sized from the terminal", async () => {
 		const w = makeFake();

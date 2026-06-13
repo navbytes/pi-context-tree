@@ -39,8 +39,8 @@ Surgically removes context via an append-only reconstruction block. **Two granul
 - **result mode** — stub individual fat tool/MCP results → `[cropped: tool arg, ~tokens, sha8]`. `--auto` pre-marks by rules; `--auto --apply` is headless (works without a TUI); `--dry-run` reports and writes nothing; latest-per-tool needs an explicit double-mark.
 - **turn mode** ➕ — remove a whole **Q&A turn** (question + its answers) together; collapses to a label-free `[dropped turn — N entries, ~tokens, recoverable: sha8]` note. Current/leaf turn protected; decision records never swept up.
 
-### `/panel` (and `Ctrl+T`) · `/decisions`
-The full-screen context panel (overlay). `/decisions` opens it on the decisions view (text listing when no TUI). Panel **stays up across actions** — pick a mutation, it executes in command context after re-validating the session, then reopens with fresh state until you close it. `Ctrl+T` is view-only in 0.79.1 (shortcuts get no command context, and pi has no command-invoke API).
+### `/panel` (and `Ctrl+Q`) · `/decisions`
+The full-screen context panel (overlay). `/decisions` opens it on the decisions view (text listing when no TUI). Panel **stays up across actions** — pick a mutation, it executes in command context after re-validating the session, then reopens with fresh state until you close it. `Ctrl+Q` is view-only in 0.79.1 (shortcuts get no command context, and pi has no command-invoke API).
 
 ## 2. The context panel (views)
 
