@@ -18,7 +18,7 @@
 | Fork/new session | `ctx.fork(entryId, {position?, withSession?})`, `ctx.newSession`, `ctx.switchSession` | `types.ts:339-373` |
 | Model switch + record | `pi.setModel(model)` (false if no key); model also implicit on every assistant message; `model_change` entry on path wins | `types.ts:1264-1265`; `session-manager.ts:369-379, 975-987` |
 | Context gauge data | `ctx.getContextUsage()` → `{tokens, contextWindow, percent}`; **tokens is `null` right after compaction** until next assistant turn | `agent-session.ts:2968-3012` |
-| Commands / shortcuts | `pi.registerCommand(name, {handler, getArgumentCompletions})`; `pi.registerShortcut("ctrl+t", {handler})` | `types.ts:1178-1188`; `keybindings.md` |
+| Commands / shortcuts | `pi.registerCommand(name, {handler, getArgumentCompletions})`; `pi.registerShortcut("ctrl+q", {handler})` | `types.ts:1178-1188`; `keybindings.md` |
 | Footer / title | `ctx.ui.setFooter(factory)` (gets `footerData.getGitBranch()` etc.); `ctx.ui.setTitle(string)`; `ctx.ui.setStatus(key, text)` | `types.ts:176-186`; examples `custom-footer.ts`, `titlebar-spinner.ts` |
 | Dialogs | `ctx.ui.select / confirm / input / editor(title, prefill)` (multi-line modal editor), `ctx.ui.notify` | `types.ts:124-275` |
 | Read session tree | `ctx.sessionManager` (read-only): `getEntries / getBranch / getTree / getChildren / getEntry / getLabel / buildSessionContext` | `extensions/types.ts:310`, ReadonlySessionManager |
@@ -117,7 +117,7 @@ No leaf movement: the fork entry itself is the label point; subsequent turns are
 3. Apply: `anchor` = parent of first cropped entry → `ctx.navigateTree(anchor, {summarize:false})` → `pi.sendMessage({customType:"ctree/crop-tail", content: reconstructionBlock, display:true, details})` → `pi.appendEntry("ctree/crop", {v:1, sourceLeafId, stubbed:[…]})`.
 4. `reconstructionBlock` = kept tail verbatim (role-prefixed), cropped bodies replaced by `[cropped: <tool> <arg>, <size>, <sha-8>]`. Old branch keeps originals (G4).
 
-### Panel `/panel` + Ctrl+T
+### Panel `/panel` + Ctrl+Q
 `ctx.ui.custom((tui, theme, keybindings, done) => new TreePanel(vm, theme, keybindings, done), {overlay:true, overlayOptions:{anchor:"center", width:"100%", height:"100%"}})` — exact full-screen `overlayOptions` are the M2 spike's deliverable. Mutations happen **after** `done(action)` resolves, back in the command handler (overlay returns an action descriptor; handler re-validates tree state then executes via SessionPort) — this respects pi's "mutate from command context" model and the spec's re-validate-on-apply invariant (TRD §6).
 
 ### Footer gauge + title (always on)

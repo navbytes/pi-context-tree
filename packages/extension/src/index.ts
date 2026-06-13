@@ -3,7 +3,7 @@
  *   pi -e /path/to/pi-context-tree/packages/extension/src/index.ts
  * or symlink this package into ~/.pi/agent/extensions/ for auto-discovery.
  *
- * Commands: /branch /merge /crop /panel /decisions (+ Ctrl+T).
+ * Commands: /branch /merge /crop /panel /decisions (+ Ctrl+Q).
  * Pinned against pi 0.79.1 — see pi-context-tree-architecture.md.
  */
 

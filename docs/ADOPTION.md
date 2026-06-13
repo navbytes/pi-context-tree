@@ -37,7 +37,7 @@ Packaging rules that gate npm/gallery (from pi's `docs/packages.md`): core `@ear
 ### P2 — convert and retain (agent-doable)
 7. **Sharpen the README "why."** ✅ Done — industry-standard layout (TOC, Why with the research, Features, Screenshots, Requirements, Usage, Roadmap, Acknowledgements), static panel screenshot. A before/after GIF is the remaining piece (P1.5, owner).
 8. **Lower first-run friction.** A one-paragraph "uninstall the dev tree first" note already exists; verify the happy path on a clean machine after going public.
-9. **Surface the panel.** `Ctrl+T` opens view-only today (pi 0.79.1 has no command-invoke API). Track upstream; when it lands, make the shortcut mutate.
+9. **Surface the panel.** `Ctrl+Q` opens view-only today (pi 0.79.1 has no command-invoke API). Track upstream; when it lands, make the shortcut mutate.
 
 ### P3 — credibility & momentum (owner + agent)
 10. **CI badge** once public (the workflow already runs).

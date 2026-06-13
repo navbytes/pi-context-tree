@@ -1,5 +1,5 @@
 /**
- * /panel + Ctrl+T (F4): the full-screen Context Panel, hosted as a pi overlay
+ * /panel + Ctrl+Q (F4): the full-screen Context Panel, hosted as a pi overlay
  * via ctx.ui.custom({overlay:true}) — the mechanism verified public in 0.79.1.
  * The panel returns ONE action; mutations execute back here in command context
  * after re-validation (TRD §6).
@@ -101,7 +101,7 @@ export async function executePanelAction(
 ): Promise<void> {
 	if (!action || action.type === "close") return;
 	if (!isCmdCtx(ctx)) {
-		ctx.ui.notify("this action needs a command context — run /panel (Ctrl+T is view-only in 0.79.1)", "warning");
+		ctx.ui.notify("this action needs a command context — run /panel (Ctrl+Q is view-only in 0.79.1)", "warning");
 		return;
 	}
 	switch (action.type) {
@@ -152,7 +152,11 @@ export function registerPanel(pi: PiLike, deps: Deps): void {
 		description: "pi-context-tree: full-screen context panel (tree · crop · consumers · decisions)",
 		handler: (_args, ctx) => runPanel(pi, ctx, deps),
 	});
-	pi.registerShortcut?.("ctrl+t", {
+	// ctrl+q, not ctrl+t: pi reserves ctrl+t for app.thinking.toggle (it's in
+	// RESERVED_KEYBINDINGS_FOR_EXTENSION_CONFLICTS), so a ctrl+t shortcut is
+	// silently skipped. ctrl+q is unbound by pi and deliverable (pi runs the
+	// terminal in raw mode, so XON/XOFF flow control can't eat it).
+	pi.registerShortcut?.("ctrl+q", {
 		description: "pi-context-tree: open the context panel",
 		handler: (ctx) => runPanel(pi, ctx, deps),
 	});
