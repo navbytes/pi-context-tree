@@ -23,6 +23,8 @@ export interface UiLike {
 	setStatus(key: string, text: string | undefined): void;
 	setTitle(title: string): void;
 	custom?<T>(factory: unknown, options?: unknown): Promise<T>;
+	/** Pin a widget (string lines) above/below the prompt — used for the context-health bar. */
+	setWidget?(key: string, content: string[] | undefined, options?: { placement?: string }): void;
 }
 
 export interface ModelRegistryLike {

@@ -69,6 +69,10 @@ export class FakeUi implements UiLike {
 	selectCalls: { title: string; options: string[] }[] = [];
 	/** unset by default — tests opt in to a TUI-capable ui by assigning (UiLike.custom is optional) */
 	custom?: <T>(factory: unknown, options?: unknown) => Promise<T> = undefined;
+	widgets = new Map<string, { lines: string[] | undefined; placement?: string }>();
+	setWidget(key: string, content: string[] | undefined, options?: { placement?: string }): void {
+		this.widgets.set(key, { lines: content, placement: options?.placement });
+	}
 
 	notify(msg: string, type?: "info" | "warning" | "error"): void {
 		this.notifications.push({ msg, type });
