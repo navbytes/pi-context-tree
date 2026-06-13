@@ -2,7 +2,7 @@
 
 Git-style `/branch` · `/merge` · `/crop` workflow and a rich context panel for [pi](https://github.com/earendil-works/pi-mono) sessions. Keep the trunk **small, fresh, relevant** (5–15% of the window — an opinionated heuristic, see the spec's evidence section); never let lossy auto-summaries touch source material; merge branches back as **human-confirmed decision records**.
 
-**Docs:** [docs/pi-context-tree-spec.md](docs/pi-context-tree-spec.md) (PRD/TRD v0.3) · [docs/pi-context-tree-architecture.md](docs/pi-context-tree-architecture.md) (verified pi APIs, design decisions) · [docs/pi-context-tree-mockup.html](docs/pi-context-tree-mockup.html) (interactive TUI mockup — the visual contract; open in a browser) · [docs/HANDOVER.md](docs/HANDOVER.md) (state + next phase).
+**Docs:** [docs/USAGE.md](docs/USAGE.md) (**hands-on guide — start here**) · [docs/APP-FEATURES.md](docs/APP-FEATURES.md) (feature inventory) · [docs/pi-context-tree-spec.md](docs/pi-context-tree-spec.md) (PRD/TRD v0.3) · [docs/pi-context-tree-architecture.md](docs/pi-context-tree-architecture.md) (verified pi APIs, design decisions) · [docs/pi-context-tree-mockup.html](docs/pi-context-tree-mockup.html) (interactive TUI mockup) · [docs/HANDOVER.md](docs/HANDOVER.md) (state + next phase).
 
 **Pinned pi:** `@earendil-works/pi-coding-agent@0.79.1` + `@earendil-works/pi-tui@0.79.1` + `@earendil-works/pi-ai@0.79.1`.
 
