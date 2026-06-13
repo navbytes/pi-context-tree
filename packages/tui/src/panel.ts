@@ -134,6 +134,13 @@ export class ContextPanel {
 				left = `${indent}${mark} ${row.text}${prot}${armed} ${age}`;
 				break;
 			}
+			case "turn": {
+				const mark = row.marked ? t.mark("[✗]") : row.protected ? t.dim("[⊘]") : t.dim("[ ]");
+				const count = t.dim(` ${row.entryCount ?? 0} entries`);
+				const prot = row.protected ? t.dim(" (current turn — protected)") : "";
+				left = `${indent}${mark} ${t.user("●")} ${row.text}${prot}${count}`;
+				break;
+			}
 			case "consumer": {
 				// mockup: bars scale to the dominant consumer; color by share of context
 				const barLen = Math.max(1, Math.round(((row.tokens ?? 0) / Math.max(1, this.consumerMax)) * 28));

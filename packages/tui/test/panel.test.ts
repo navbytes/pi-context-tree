@@ -119,6 +119,46 @@ describe("ContextPanel crop flow", () => {
 	});
 });
 
+describe("ContextPanel crop turn-mode", () => {
+	function turnPanel() {
+		const b = new SessionBuilder();
+		b.user("first question");
+		b.assistant("first answer");
+		b.user("second question — the fat one");
+		b.toolUse("chrome.snapshot", { url: "audit" }, filler(40_000));
+		b.assistant("second answer");
+		b.user("third question");
+		b.assistant("third answer");
+		const panel = new ContextPanel({
+			input: { entries: b.build().entries, project: "p", contextWindow: 200_000 },
+			onAction: () => {},
+		});
+		panel.handleInput("c"); // crop
+		panel.handleInput("t"); // turn mode
+		return panel;
+	}
+
+	it("lists turns with a mark box, question, entry count and tokens", () => {
+		const panel = turnPanel();
+		const text = panel.render(110).map(strip).join("\n");
+		expect(text).toContain("REMOVE WHOLE TURNS");
+		expect(text).toContain("user: second question");
+		expect(text).toContain("4 entries");
+		expect(text).toContain("t results mode"); // footer offers toggling back
+	});
+
+	it("shows the mark on a selected turn and protects the current turn", () => {
+		const panel = turnPanel();
+		const rows = panel.viewModel.rows();
+		const second = rows.findIndex((r) => r.text.includes("second question"));
+		for (let i = 0; i < second; i++) panel.handleInput("j");
+		panel.handleInput(" ");
+		const text = panel.render(110).map(strip).join("\n");
+		expect(text).toContain("[✗]"); // marked turn
+		expect(text).toContain("current"); // the leaf turn shows a protected note
+	});
+});
+
 describe("ContextPanel consumers bars", () => {
 	it("scales bars relative to the biggest consumer", () => {
 		const { panel } = makePanel();

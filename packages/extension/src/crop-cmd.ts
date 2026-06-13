@@ -78,21 +78,24 @@ export async function applyCropPlan(pi: PiLike, ctx: CmdCtxLike, plan: CropPlan)
 	}
 	// triggerTurn:false with NO deliverAs — same reasoning as merge.ts: the reconstruction block
 	// must be in the session before the ctree/crop marker, not staged for a hypothetical next turn.
-	pi.sendMessage(
-		{
-			customType: CTREE_CROP_TAIL,
-			content: block,
-			display: true,
-			details: { v: 1, sourceLeafId: plan.sourceLeafId, stubbed: plan.stubs },
-		},
-		{ triggerTurn: false },
-	);
-	pi.appendEntry(CTREE_CROP, { v: 1, sourceLeafId: plan.sourceLeafId, stubbed: plan.stubs });
+	// `dropped` is added only when whole turns were removed — keeps plain-crop entries byte-stable.
+	const details = {
+		v: 1 as const,
+		sourceLeafId: plan.sourceLeafId,
+		stubbed: plan.stubs,
+		...(plan.dropped.length ? { dropped: plan.dropped } : {}),
+	};
+	pi.sendMessage({ customType: CTREE_CROP_TAIL, content: block, display: true, details }, { triggerTurn: false });
+	pi.appendEntry(CTREE_CROP, details);
 	refreshAmbient(pi, ctx);
-	ctx.ui.notify(
-		`✂ cropped ${plan.stubs.length} entr${plan.stubs.length === 1 ? "y" : "ies"} → stubs · ~${fmtTokens(plan.reclaimTokens)} reclaimed · originals on the previous branch`,
-		"info",
-	);
+	ctx.ui.notify(cropAppliedMessage(plan), "info");
+}
+
+function cropAppliedMessage(plan: CropPlan): string {
+	const parts: string[] = [];
+	if (plan.dropped.length) parts.push(`removed ${plan.dropped.length} turn${plan.dropped.length === 1 ? "" : "s"}`);
+	if (plan.stubs.length) parts.push(`cropped ${plan.stubs.length} entr${plan.stubs.length === 1 ? "y" : "ies"} → stubs`);
+	return `✂ ${parts.join(" + ") || "nothing"} · ~${fmtTokens(plan.reclaimTokens)} reclaimed · originals on the previous branch`;
 }
 
 export async function cropHandler(pi: PiLike, ctx: CmdCtxLike, args: string): Promise<void> {

@@ -16,6 +16,7 @@ export interface CtreeTheme {
 	leaf: (s: string) => string;
 	mark: (s: string) => string;
 	decision: (s: string) => string;
+	user: (s: string) => string;
 	presentation: Record<ForkPresentation, (s: string) => string>;
 	band: Record<Band, (s: string) => string>;
 }
@@ -30,6 +31,7 @@ export const defaultTheme: CtreeTheme = {
 	leaf: chalk.green,
 	mark: chalk.red.bold,
 	decision: chalk.magenta,
+	user: chalk.cyan,
 	presentation: {
 		active: chalk.green,
 		dangling: chalk.yellow,

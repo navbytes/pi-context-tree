@@ -1,4 +1,4 @@
-import { SessionTree, cropCandidates, planCrop } from "@pi-context-tree/core";
+import { SessionTree, cropCandidates, planCrop, planRemoveTurns } from "@pi-context-tree/core";
 import { describe, expect, it } from "vitest";
 import { applyCropPlan, cropHandler, parseCropFlags } from "../src/crop-cmd.ts";
 import { type FakeWorld, entriesByType, makeFake } from "./fake-pi.ts";
@@ -111,6 +111,37 @@ describe("applyCropPlan", () => {
 		expect(w.session.entries.length).toBe(entriesBefore + 2);
 		expect(w.session.entries.find((e) => e.id === snap1)).toBeDefined();
 		expect(w.ui.notes().some((n) => n.includes("✂ cropped 1"))).toBe(true);
+	});
+
+	it("removes a whole Q&A turn: drop note in the tail, dropped[] in the marker, originals kept", async () => {
+		const w = makeFake();
+		w.session.user("audit my tabs");
+		w.session.assistant("checking");
+		const u2 = w.session.user("now suspend the noisy ones");
+		w.session.toolResult("chrome.snapshot", "S".repeat(40_000));
+		w.session.assistant("done, 41 suspended");
+		w.session.user("thanks");
+		w.session.assistant("you're welcome");
+		const tree = SessionTree.fromEntries(w.session.entries);
+		const plan = planRemoveTurns(tree, w.session.leaf!, [u2]);
+		const before = w.session.entries.length;
+
+		await applyCropPlan(w.pi, w.ctx, plan);
+
+		const tail = entriesByType(w.session, "custom_message", "ctree/crop-tail")[0] as { content?: string };
+		expect(tail.content).toContain("[dropped turn —");
+		expect(tail.content).not.toContain("now suspend the noisy ones"); // question text not re-injected
+		expect(tail.content).not.toContain("done, 41 suspended");
+		expect(tail.content).toContain("thanks"); // survivor kept
+
+		const marker = entriesByType(w.session, "custom", "ctree/crop")[0] as {
+			data?: { dropped?: { userId: string; label: string }[] };
+		};
+		expect(marker.data?.dropped?.[0]?.userId).toBe(u2);
+		expect(marker.data?.dropped?.[0]?.label).toBe("now suspend the noisy ones"); // label preserved in marker
+
+		expect(w.session.entries.length).toBe(before + 2); // append-only
+		expect(w.ui.notes().some((n) => n.includes("removed 1 turn"))).toBe(true);
 	});
 
 	it("re-validates the leaf and aborts if the session moved (TRD §6)", async () => {
