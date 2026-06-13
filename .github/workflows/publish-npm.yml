@@ -1,0 +1,53 @@
+# Publish the packages to npm — enables `pi install npm:pi-context-tree` and the
+# pi.dev gallery (which indexes the `pi-package` keyword). MANUAL trigger only:
+# npm publishes are immutable, so this never runs automatically. Defaults to a
+# dry-run; flip the input to actually publish.
+#
+# Requires an `NPM_TOKEN` repo secret (npm → Access Tokens → Automation) for a
+# real publish. The dry-run validates without a token.
+name: publish-npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Pack & validate only (no publish)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          registry-url: "https://registry.npmjs.org"
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+
+      - name: publish bottom-up (deps first)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          FLAG=""
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            FLAG="--dry-run"
+            echo "::notice::DRY RUN — packing and validating, nothing will be published"
+          fi
+          for pkg in @pi-context-tree/core @pi-context-tree/tui @pi-context-tree/pitree @pi-context-tree/extension; do
+            echo "::group::$pkg"
+            npm publish -w "$pkg" --access public $FLAG
+            echo "::endgroup::"
+          done
+          echo "::group::pi-context-tree (root)"
+          npm publish --access public $FLAG
+          echo "::endgroup::"

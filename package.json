@@ -1,6 +1,5 @@
 {
 	"name": "pi-context-tree",
-	"private": true,
 	"type": "module",
 	"version": "0.1.0",
 	"description": "Git-style /branch /merge /crop workflow + context panel for pi sessions — keep your agent's context small, fresh, and relevant.",
@@ -38,7 +37,7 @@
 		"node": ">=22.19.0"
 	},
 	"scripts": {
-		"prepare": "npm run build",
+		"prepare": "node -e \"require('fs').existsSync('packages/core')&&require('child_process').execSync('npm run build',{stdio:'inherit'})\"",
 		"build": "npm run build -w @pi-context-tree/core && npm run build -w @pi-context-tree/tui && npm run build -w @pi-context-tree/pitree",
 		"test": "npm run build && npm run test --workspaces --if-present",
 		"check": "npm run check:types && npm run check:lint",
@@ -47,11 +46,13 @@
 		"fixtures": "node fixtures/generate.ts"
 	},
 	"dependencies": {
+		"@pi-context-tree/extension": "0.1.0",
 		"@types/node": "^22.10.0",
 		"typescript": "^5.7.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"vitest": "^3.2.4"
-	}
+	},
+	"files": ["extensions"]
 }
