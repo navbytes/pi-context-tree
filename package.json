@@ -48,7 +48,7 @@
 	"dependencies": {
 		"@pi-context-tree/extension": "0.1.1",
 		"@types/node": "^22.10.0",
-		"typescript": "^5.7.0"
+		"typescript": "^6.0.3"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
