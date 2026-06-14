@@ -1,6 +1,6 @@
 {
 	"name": "@pi-context-tree/pitree",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"type": "module",
 	"description": "Forest CLI across all pi projects (dangling-branch detection) + standalone read-only panel",
 	"bin": {
@@ -14,8 +14,8 @@
 	},
 	"dependencies": {
 		"@earendil-works/pi-tui": "0.79.1",
-		"@pi-context-tree/core": "0.1.0",
-		"@pi-context-tree/tui": "0.1.0",
+		"@pi-context-tree/core": "0.1.1",
+		"@pi-context-tree/tui": "0.1.1",
 		"chalk": "^5.3.0"
 	},
 	"engines": {

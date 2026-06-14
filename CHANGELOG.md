@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format is based on
 
 _Nothing yet._
 
+## [0.1.1] — 2026-06-13
+
+### Fixed
+- Gallery preview media (`image` / `video`) now served via **jsDelivr** instead of `raw.githubusercontent.com` — which returned the demo MP4 as `application/octet-stream`, so pi.dev's gallery couldn't render it. jsDelivr serves the correct `video/mp4` and `image/gif` with CDN + CORS. (Packaging only; no behavior change.)
+
 ## [0.1.0] — 2026-06-13
 
 First public release — a git-style branch/merge/crop workflow plus a full-screen context panel for [pi](https://github.com/earendil-works/pi) sessions. Append-only and recoverable; pinned to `@earendil-works/*@0.79.1`.
@@ -34,5 +39,6 @@ First public release — a git-style branch/merge/crop workflow plus a full-scre
 - **CI** — lint/types/unit per push, integration against the pinned pi (keyless), and a non-blocking `pi@latest` drift lane.
 - **Release** — pushing a `vX.Y.Z` tag runs the gate and cuts a GitHub Release from this changelog.
 
-[Unreleased]: https://github.com/navbytes/pi-context-tree/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/navbytes/pi-context-tree/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/navbytes/pi-context-tree/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/navbytes/pi-context-tree/releases/tag/v0.1.0
