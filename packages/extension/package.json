@@ -17,7 +17,7 @@
 	},
 	"devDependencies": {
 		"@earendil-works/pi-ai": "0.79.1",
-		"@earendil-works/pi-coding-agent": "0.79.1"
+		"@earendil-works/pi-coding-agent": "0.79.8"
 	},
 	"engines": {
 		"node": ">=22.19.0"
