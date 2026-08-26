@@ -224,3 +224,23 @@ describe("ContextPanel inside a TUI (xterm headless smoke)", () => {
 		tui.stop();
 	});
 });
+
+describe("review fixes", () => {
+	it("renders a constant line count across views — inspect no longer drops the secthead row", () => {
+		const { panel } = makePanel();
+		const treeHeight = panel.render(100).length;
+		panel.handleInput("i"); // inspect the selected row
+		expect(strip(panel.render(100)[0] ?? "")).toContain("inspect");
+		expect(panel.render(100).length).toBe(treeHeight);
+		panel.handleInput("\x1b"); // back to tree
+		expect(panel.render(100).length).toBe(treeHeight);
+	});
+
+	it("maps PageDown/PageUp to paging", () => {
+		const { panel } = makePanel();
+		panel.handleInput("\x1b[6~"); // legacy PageDown
+		expect(panel.viewModel.sel).toBeGreaterThan(0);
+		panel.handleInput("\x1b[5~"); // legacy PageUp
+		expect(panel.viewModel.sel).toBe(0);
+	});
+});

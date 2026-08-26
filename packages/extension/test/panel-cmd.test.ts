@@ -191,3 +191,80 @@ describe("openPanel overlay host", () => {
 		expect(captured.panel?.opts?.maxBody).toBeGreaterThanOrEqual(20);
 	});
 });
+
+describe("review fixes", () => {
+	it("ctrl+q from a view-only context mounts the panel read-only with a shortcut-specific denial", async () => {
+		const w = makeFake();
+		w.session.user("hi");
+		const captured: { input?: { readOnly?: boolean; readOnlyReason?: string } } = {};
+		w.ui.custom = async <T>(factory: unknown): Promise<T> => {
+			const f = factory as (
+				tui: unknown,
+				theme: unknown,
+				kb: unknown,
+				done: (a: unknown) => void,
+			) => {
+				viewModel: { input: { readOnly?: boolean; readOnlyReason?: string } };
+			};
+			captured.input = f({ terminal: { rows: 30 } }, undefined, undefined, () => {}).viewModel.input;
+			return { type: "close" } as T;
+		};
+		registerPanel(w.pi, { draft: async () => "" });
+
+		// pi 0.79.x shortcut contexts have no navigateTree — strip it to simulate one
+		const viewOnlyCtx = { ...w.ctx, model: w.ctx.model, navigateTree: undefined } as unknown as Parameters<
+			NonNullable<ReturnType<typeof w.shortcuts.get>>
+		>[0];
+		await w.shortcuts.get("ctrl+q")?.(viewOnlyCtx);
+
+		expect(captured.input?.readOnly).toBe(true);
+		expect(captured.input?.readOnlyReason).toContain("run /panel to act");
+	});
+
+	it("ctrl+q stays fully interactive when the shortcut context can execute actions", async () => {
+		const w = makeFake();
+		w.session.user("hi");
+		const captured: { input?: { readOnly?: boolean } } = {};
+		w.ui.custom = async <T>(factory: unknown): Promise<T> => {
+			const f = factory as (
+				tui: unknown,
+				theme: unknown,
+				kb: unknown,
+				done: (a: unknown) => void,
+			) => {
+				viewModel: { input: { readOnly?: boolean } };
+			};
+			captured.input = f({ terminal: { rows: 30 } }, undefined, undefined, () => {}).viewModel.input;
+			return { type: "close" } as T;
+		};
+		registerPanel(w.pi, { draft: async () => "" });
+
+		await w.shortcuts.get("ctrl+q")?.(w.ctx); // fake ctx has navigateTree
+
+		expect(captured.input?.readOnly).toBeFalsy();
+	});
+
+	it("--export takes the token AFTER the flag as the path, not the first token", async () => {
+		const w = makeFake();
+		w.session.user("kickoff");
+		const a = w.session.assistant("plan");
+		w.session.append({
+			type: "custom",
+			customType: "ctree/fork",
+			data: { v: 1, name: "feat-x", parentEntryId: a, trunkModel: "anthropic/opus-4.8", status: "open" },
+		});
+		w.session.append({
+			type: "custom_message",
+			customType: "ctree/decision",
+			content: "## Decision: feat-x\n**Outcome:** done.",
+			display: true,
+			details: { v: 1, forkEntryId: "x003", branchName: "feat-x" },
+		});
+		registerPanel(w.pi, { draft: async () => "unused" });
+
+		const out = join(tmpdir(), "ctree-decisions-flag-order.test.md");
+		await w.commands.get("decisions")?.(`stray-token --export ${out}`, w.ctx);
+
+		expect(readFileSync(out, "utf8")).toContain("## Decision: feat-x");
+	});
+});

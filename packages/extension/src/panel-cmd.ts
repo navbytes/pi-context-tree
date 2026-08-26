@@ -6,7 +6,8 @@
  */
 
 import { writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { homedir } from "node:os";
+import { join, resolve } from "node:path";
 import {
 	type CtreeDecisionDetails,
 	decisionsOnPath,
@@ -26,6 +27,7 @@ export interface PanelOpenOptions {
 	premark?: string[];
 	dryRun?: boolean;
 	readOnly?: boolean;
+	readOnlyReason?: string;
 }
 
 export function buildPanelInput(pi: PiLike, ctx: CtxLike, opts: PanelOpenOptions = {}): PanelInput {
@@ -39,6 +41,7 @@ export function buildPanelInput(pi: PiLike, ctx: CtxLike, opts: PanelOpenOptions
 		contextWindow: ctx.model?.contextWindow ?? usage?.contextWindow,
 		usageTokens: usage ? usage.tokens : undefined,
 		readOnly: opts.readOnly,
+		readOnlyReason: opts.readOnlyReason,
 		dryRun: opts.dryRun,
 		initialView: opts.initialView,
 		premark: opts.premark,
@@ -105,7 +108,11 @@ function exportDecisions(ctx: CtxLike, args: string): void {
 		decs.map((d) => textOfContent(d.content)),
 		projectName(),
 	);
-	const pathArg = args.replace("--export", "").trim().split(/\s+/).filter(Boolean)[0];
+	// the path is the token AFTER --export (not whatever token comes first), with ~ expanded
+	const tokens = args.trim().split(/\s+/).filter(Boolean);
+	const flagIdx = tokens.indexOf("--export");
+	const rawPath = flagIdx >= 0 ? tokens[flagIdx + 1] : undefined;
+	const pathArg = rawPath === "~" ? homedir() : rawPath?.startsWith("~/") ? join(homedir(), rawPath.slice(2)) : rawPath;
 	const outPath = resolve(pathArg || "ctree-decisions.md");
 	try {
 		writeFileSync(outPath, md, "utf8");
@@ -150,7 +157,7 @@ export async function executePanelAction(
 			return;
 		}
 		case "crop-apply": {
-			const { applyCropPlan, cropHandler } = await import("./crop-cmd.ts");
+			const { applyCropPlan } = await import("./crop-cmd.ts");
 			if (action.dryRun) {
 				ctx.ui.notify(`(dry-run) would crop ${action.plan.stubs.length} — nothing written`, "info");
 				return;
@@ -181,7 +188,16 @@ export function registerPanel(pi: PiLike, deps: Deps): void {
 	// terminal in raw mode, so XON/XOFF flow control can't eat it).
 	pi.registerShortcut?.("ctrl+q", {
 		description: "pi-context-tree: open the context panel",
-		handler: (ctx) => runPanel(pi, ctx, deps),
+		// shortcut contexts may lack navigateTree (view-only in pi 0.79.x): open
+		// read-only up front so the VM denies mutations immediately, instead of
+		// letting the user mark crops that silently vanish after the panel closes
+		handler: (ctx) =>
+			runPanel(
+				pi,
+				ctx,
+				deps,
+				isCmdCtx(ctx) ? {} : { readOnly: true, readOnlyReason: "view-only from the shortcut — run /panel to act" },
+			),
 	});
 	pi.registerCommand("decisions", {
 		description: "pi-context-tree: decision records on the current trunk (F7) — --export [path] for portable markdown",
