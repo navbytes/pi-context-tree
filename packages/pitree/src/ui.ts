@@ -4,13 +4,13 @@
  * every mutating action is denied. Mutation outside pi is out of scope (v2).
  */
 
-import { ProcessTerminal, TUI, matchesKey, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { matchesKey, ProcessTerminal, TUI, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import {
 	type Forest,
-	type PanelInput,
-	type SessionSummary,
 	fmtTokens,
+	type PanelInput,
 	parseSessionFile,
+	type SessionSummary,
 	scanForest,
 } from "@pi-context-tree/core";
 import { ContextPanel, defaultTheme } from "@pi-context-tree/tui";

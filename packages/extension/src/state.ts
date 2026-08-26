@@ -3,12 +3,12 @@
  */
 
 import {
-	type ForkInfo,
-	type SessionEntry,
-	SessionTree,
 	contextSlice,
 	extractForks,
+	type ForkInfo,
 	nearestOpenFork,
+	type SessionEntry,
+	SessionTree,
 } from "@pi-context-tree/core";
 import { type CtxLike, entriesOf, leafIdOf } from "./adapter.ts";
 

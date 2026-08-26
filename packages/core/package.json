@@ -15,7 +15,9 @@
 			"import": "./dist/testkit.js"
 		}
 	},
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"scripts": {
 		"build": "tsc -p tsconfig.build.json",
 		"test": "vitest --run",

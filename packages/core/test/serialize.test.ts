@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { serializeEntries, serializeEntry } from "../src/serialize.ts";
-import { SessionBuilder, filler } from "../src/testkit.ts";
+import { filler, SessionBuilder } from "../src/testkit.ts";
 
 describe("serializeEntry", () => {
 	it("renders role-prefixed lines", () => {

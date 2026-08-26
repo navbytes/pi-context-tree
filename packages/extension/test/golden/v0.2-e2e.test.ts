@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MockOpenAI } from "./mock-openai.ts";
-import { PiRpc, type UiHandlers, piPath, writeMockModels } from "./rpc-driver.ts";
+import { PiRpc, piPath, type UiHandlers, writeMockModels } from "./rpc-driver.ts";
 
 const PI = piPath();
 
@@ -77,59 +77,57 @@ async function runScenario(
 }
 
 describe.skipIf(!PI)("v0.2 friction-killers e2e (real pi)", () => {
-	it(
-		"bare /merge squashes · /undo re-opens the branch · /decisions --export writes markdown",
-		{ timeout: 120_000 },
-		async () => {
-			const mock = new MockOpenAI();
-			mock.turns.push(
-				{ text: "trunk hi", usage: { input: 20, output: 4 } },
-				{ text: "branch attempt done", usage: { input: 30, output: 6 } },
-				{ text: "back on the re-opened branch", usage: { input: 22, output: 5 } },
-			);
-			mock.drafts.push({
-				match: (system) => system.includes("decision records"),
-				respond: () => ({ text: DRAFT, usage: { input: 50, output: 25 } }),
-			});
-			const exportPath = join(tmpdir(), `ctree-e2e-decisions-${process.pid}.md`);
+	it("bare /merge squashes · /undo re-opens the branch · /decisions --export writes markdown", {
+		timeout: 120_000,
+	}, async () => {
+		const mock = new MockOpenAI();
+		mock.turns.push(
+			{ text: "trunk hi", usage: { input: 20, output: 4 } },
+			{ text: "branch attempt done", usage: { input: 30, output: 6 } },
+			{ text: "back on the re-opened branch", usage: { input: 22, output: 5 } },
+		);
+		mock.drafts.push({
+			match: (system) => system.includes("decision records"),
+			respond: () => ({ text: DRAFT, usage: { input: 50, output: 25 } }),
+		});
+		const exportPath = join(tmpdir(), `ctree-e2e-decisions-${process.pid}.md`);
 
-			const entries = await runScenario(
-				mock,
-				{ editor: (req) => `${req.prefill ?? ""}\n<!-- ok -->`, confirm: () => true },
-				async (pi) => {
-					await pi.turn("hello trunk");
-					await pi.command("/branch feat-x", /^⎇ branched: feat-x/);
-					await pi.turn("attempt the thing");
-					// bare /merge — NO flag — must default to squash (the v0.2 change)
-					await pi.command("/merge", /^⎇ squashed feat-x/);
-					// /decisions --export on the trunk, where the squashed record lives on-path
-					await pi.command(`/decisions --export ${exportPath}`, /^wrote 1 decision record/);
-					// /undo re-opens the branch — append-only, navigates back to the pre-merge leaf
-					await pi.command("/undo", /^↩ undone/);
-					await pi.turn("keep working");
-				},
-			);
+		const entries = await runScenario(
+			mock,
+			{ editor: (req) => `${req.prefill ?? ""}\n<!-- ok -->`, confirm: () => true },
+			async (pi) => {
+				await pi.turn("hello trunk");
+				await pi.command("/branch feat-x", /^⎇ branched: feat-x/);
+				await pi.turn("attempt the thing");
+				// bare /merge — NO flag — must default to squash (the v0.2 change)
+				await pi.command("/merge", /^⎇ squashed feat-x/);
+				// /decisions --export on the trunk, where the squashed record lives on-path
+				await pi.command(`/decisions --export ${exportPath}`, /^wrote 1 decision record/);
+				// /undo re-opens the branch — append-only, navigates back to the pre-merge leaf
+				await pi.command("/undo", /^↩ undone/);
+				await pi.turn("keep working");
+			},
+		);
 
-			// bare /merge produced a squash without a selector: one decision + a squashed close carrying prevLeafId
-			expect(ofType(entries, "custom_message", "ctree/decision")).toHaveLength(1);
-			const close = ofType(entries, "custom", "ctree/close")[0] as Entry;
-			expect(close.data?.status).toBe("squashed");
-			const prevLeafId = close.data?.prevLeafId as string;
-			expect(prevLeafId).toBeTruthy();
+		// bare /merge produced a squash without a selector: one decision + a squashed close carrying prevLeafId
+		expect(ofType(entries, "custom_message", "ctree/decision")).toHaveLength(1);
+		const close = ofType(entries, "custom", "ctree/close")[0] as Entry;
+		expect(close.data?.status).toBe("squashed");
+		const prevLeafId = close.data?.prevLeafId as string;
+		expect(prevLeafId).toBeTruthy();
 
-			// /undo actually moved the leaf back: the post-undo turn parents under the pre-merge tip
-			const reopened = entries.find((e) => roleOf(e) === "user" && JSON.stringify(e.message).includes("keep working"));
-			expect(reopened?.parentId).toBe(prevLeafId);
+		// /undo actually moved the leaf back: the post-undo turn parents under the pre-merge tip
+		const reopened = entries.find((e) => roleOf(e) === "user" && JSON.stringify(e.message).includes("keep working"));
+		expect(reopened?.parentId).toBe(prevLeafId);
 
-			// nothing was deleted (append-only): the decision + close markers are still present
-			expect(ofType(entries, "custom", "ctree/close")).toHaveLength(1);
+		// nothing was deleted (append-only): the decision + close markers are still present
+		expect(ofType(entries, "custom", "ctree/close")).toHaveLength(1);
 
-			// /decisions --export wrote portable markdown
-			const md = readFileSync(exportPath, "utf8");
-			expect(md).toContain("# Decision records");
-			expect(md).toContain("## Decision: feat-x");
-		},
-	);
+		// /decisions --export wrote portable markdown
+		const md = readFileSync(exportPath, "utf8");
+		expect(md).toContain("# Decision records");
+		expect(md).toContain("## Decision: feat-x");
+	});
 
 	it("/crop --top stubs the biggest unprotected result after a confirm", { timeout: 120_000 }, async () => {
 		const mock = new MockOpenAI();

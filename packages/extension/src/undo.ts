@@ -18,7 +18,7 @@ import {
 } from "@pi-context-tree/core";
 import type { CmdCtxLike, PiLike } from "./adapter.ts";
 import { refreshAmbient } from "./ambient.ts";
-import { type SessionState, deriveState } from "./state.ts";
+import { deriveState, type SessionState } from "./state.ts";
 
 interface UndoStep {
 	target: string;

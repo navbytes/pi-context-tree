@@ -7,7 +7,7 @@
  * `drafts` by system prompt. Every request is recorded for assertions.
  */
 
-import { type IncomingMessage, type Server, type ServerResponse, createServer } from "node:http";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 
 export interface CannedTurn {
 	text?: string;

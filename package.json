@@ -30,9 +30,13 @@
 	"image": "https://cdn.jsdelivr.net/gh/navbytes/pi-context-tree@main/docs/assets/demo.gif",
 	"video": "https://cdn.jsdelivr.net/gh/navbytes/pi-context-tree@main/docs/assets/demo.mp4",
 	"pi": {
-		"extensions": ["./extensions"]
+		"extensions": [
+			"./extensions"
+		]
 	},
-	"workspaces": ["packages/*"],
+	"workspaces": [
+		"packages/*"
+	],
 	"engines": {
 		"node": ">=22.19.0"
 	},
@@ -51,8 +55,10 @@
 		"typescript": "^6.0.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^1.9.4",
+		"@biomejs/biome": "^2.5.0",
 		"vitest": "^4.1.8"
 	},
-	"files": ["extensions"]
+	"files": [
+		"extensions"
+	]
 }

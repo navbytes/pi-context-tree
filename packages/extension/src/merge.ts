@@ -15,17 +15,17 @@ import {
 	siblingForks,
 } from "@pi-context-tree/core";
 import {
+	appendAndGetId,
 	type CmdCtxLike,
 	type Deps,
-	type PiLike,
-	appendAndGetId,
 	lastEntryId,
 	modelKey,
+	type PiLike,
 	resolveModel,
 } from "./adapter.ts";
 import { refreshAmbient } from "./ambient.ts";
 import { DRAFT_SYSTEM_PROMPT, draftUserPrompt } from "./draft.ts";
-import { type SessionState, branchEntries, deriveState } from "./state.ts";
+import { branchEntries, deriveState, type SessionState } from "./state.ts";
 
 type MergeMode = "squash" | "no-llm" | "discard" | "tournament";
 

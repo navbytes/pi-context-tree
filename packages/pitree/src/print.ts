@@ -3,7 +3,7 @@
  * assert plain strings).
  */
 
-import { type Forest, type SessionSummary, fmtTokens } from "@pi-context-tree/core";
+import { type Forest, fmtTokens, type SessionSummary } from "@pi-context-tree/core";
 import chalk from "chalk";
 
 export interface PrintOptions {

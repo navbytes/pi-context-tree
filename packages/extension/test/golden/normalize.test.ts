@@ -118,9 +118,9 @@ describe("normalizeSession", () => {
 		expect(user?.parentId).toBe("e001");
 		expect(assistant?.id).toBe("e003");
 		expect(fork?.id).toBe("e004");
-		expect((fork?.data as { parentEntryId: string }).parentEntryId).toBe("e003");
+		expect((fork?.data as { parentEntryId: string } | undefined)?.parentEntryId).toBe("e003");
 		expect(label?.targetId).toBe("e004");
-		expect((decision?.details as { forkEntryId: string }).forkEntryId).toBe("e004");
+		expect((decision?.details as { forkEntryId: string } | undefined)?.forkEntryId).toBe("e004");
 		// ids embedded in content strings get mapped too
 		expect(decision?.content).toContain("branch e004");
 		const closeData = close?.data as { forkEntryId: string; decisionEntryId: string };

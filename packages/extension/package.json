@@ -26,5 +26,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"files": ["src"]
+	"files": [
+		"src"
+	]
 }

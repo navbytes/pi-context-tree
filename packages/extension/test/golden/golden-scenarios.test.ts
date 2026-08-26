@@ -8,8 +8,7 @@
  * Skipped when pi is not installed (same policy as rpc-smoke.test.ts).
  */
 
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { realpathSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SessionBuilder } from "@pi-context-tree/core/testkit";
@@ -17,7 +16,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { expectGolden } from "./golden.ts";
 import { MockOpenAI } from "./mock-openai.ts";
 import { normalizeSession } from "./normalize.ts";
-import { PiRpc, type UiHandlers, piPath, writeMockModels } from "./rpc-driver.ts";
+import { PiRpc, piPath, type UiHandlers, writeMockModels } from "./rpc-driver.ts";
 
 const PI = piPath();
 
@@ -191,87 +190,85 @@ describe.skipIf(!PI)("rpc goldens", () => {
 		expectGolden("discard.jsonl", normalizeSession(raw));
 	});
 
-	it(
-		"tournament: ONE combined record, per-sibling close markers with drafted epitaphs",
-		{ timeout: 120_000 },
-		async () => {
-			const mock = new MockOpenAI();
-			mocks.push(mock);
-			mock.drafts.push(
-				{
-					match: (system) => system.includes("decision records"),
-					respond: () => ({ text: "## Decision: alt-b\n**Outcome:** B wins on simplicity." }),
-				},
-				{
-					match: (system) => system.includes("epitaphs"),
-					respond: () => ({ text: "chose stability over cleverness" }),
-				},
-			);
+	it("tournament: ONE combined record, per-sibling close markers with drafted epitaphs", {
+		timeout: 120_000,
+	}, async () => {
+		const mock = new MockOpenAI();
+		mocks.push(mock);
+		mock.drafts.push(
+			{
+				match: (system) => system.includes("decision records"),
+				respond: () => ({ text: "## Decision: alt-b\n**Outcome:** B wins on simplicity." }),
+			},
+			{
+				match: (system) => system.includes("epitaphs"),
+				respond: () => ({ text: "chose stability over cleverness" }),
+			},
+		);
 
-			const { raw } = await withScenario(
-				mock,
-				{ editor: (req) => `${req.prefill ?? ""}\n\n<!-- reviewed-by-human -->` },
-				async (pi, sandbox) => {
-					// Seed the two-open-siblings topology with the deterministic testkit and load it.
-					const b = new SessionBuilder(sandbox.cwd);
-					b.modelChange("mock", "trunk-1");
-					b.user("we need an approach");
-					const a0 = b.assistant("two options exist", { provider: "mock", model: "trunk-1" });
-					b.fork("alt-a", { trunkModel: "mock/trunk-1", branchModel: "mock/branch-1" });
-					b.user("try approach A");
-					b.assistant("A is fragile", { provider: "mock", model: "branch-1" });
-					b.at(a0);
-					b.fork("alt-b", { trunkModel: "mock/trunk-1", branchModel: "mock/branch-1" });
-					b.user("try approach B");
-					b.assistant("B works", { provider: "mock", model: "branch-1" });
-					const fixture = join(sandbox.root, "tournament-seed.jsonl");
-					writeFileSync(fixture, b.build().text);
+		const { raw } = await withScenario(
+			mock,
+			{ editor: (req) => `${req.prefill ?? ""}\n\n<!-- reviewed-by-human -->` },
+			async (pi, sandbox) => {
+				// Seed the two-open-siblings topology with the deterministic testkit and load it.
+				const b = new SessionBuilder(sandbox.cwd);
+				b.modelChange("mock", "trunk-1");
+				b.user("we need an approach");
+				const a0 = b.assistant("two options exist", { provider: "mock", model: "trunk-1" });
+				b.fork("alt-a", { trunkModel: "mock/trunk-1", branchModel: "mock/branch-1" });
+				b.user("try approach A");
+				b.assistant("A is fragile", { provider: "mock", model: "branch-1" });
+				b.at(a0);
+				b.fork("alt-b", { trunkModel: "mock/trunk-1", branchModel: "mock/branch-1" });
+				b.user("try approach B");
+				b.assistant("B works", { provider: "mock", model: "branch-1" });
+				const fixture = join(sandbox.root, "tournament-seed.jsonl");
+				writeFileSync(fixture, b.build().text);
 
-					await pi.request({ type: "switch_session", sessionPath: fixture });
-					await pi.command("/merge --tournament", /^⎇ tournament: alt-b won/);
-				},
-			);
+				await pi.request({ type: "switch_session", sessionPath: fixture });
+				await pi.command("/merge --tournament", /^⎇ tournament: alt-b won/);
+			},
+		);
 
-			const entries = entriesOf(raw);
-			const forks = ofType(entries, "custom", "ctree/fork");
-			expect(forks).toHaveLength(2);
-			const [forkA, forkB] = forks as [Entry, Entry];
+		const entries = entriesOf(raw);
+		const forks = ofType(entries, "custom", "ctree/fork");
+		expect(forks).toHaveLength(2);
+		const [forkA, forkB] = forks as [Entry, Entry];
 
-			// F2.4: ONE combined node — winner record carries the rejected-alternatives section
-			const decisions = ofType(entries, "custom_message", "ctree/decision");
-			expect(decisions).toHaveLength(1);
-			const decision = decisions[0] as Entry;
-			expect(decision.content).toContain("## Decision: alt-b");
-			expect(decision.content).toContain("### Rejected alternatives");
-			expect(decision.content).toContain("**alt-a:** chose stability over cleverness");
-			expect(decision.content).toContain("reviewed-by-human");
-			expect((decision.details as { siblings: { name: string }[] }).siblings).toEqual([
-				{ name: "alt-a", reason: "chose stability over cleverness" },
-			]);
+		// F2.4: ONE combined node — winner record carries the rejected-alternatives section
+		const decisions = ofType(entries, "custom_message", "ctree/decision");
+		expect(decisions).toHaveLength(1);
+		const decision = decisions[0] as Entry;
+		expect(decision.content).toContain("## Decision: alt-b");
+		expect(decision.content).toContain("### Rejected alternatives");
+		expect(decision.content).toContain("**alt-a:** chose stability over cleverness");
+		expect(decision.content).toContain("reviewed-by-human");
+		expect((decision.details as { siblings: { name: string }[] }).siblings).toEqual([
+			{ name: "alt-a", reason: "chose stability over cleverness" },
+		]);
 
-			// per-sibling close markers: winner squashed first (after the decision), loser rejected with epitaph
-			const closes = ofType(entries, "custom", "ctree/close");
-			expect(closes).toHaveLength(2);
-			const [closeWin, closeLose] = closes as [Entry, Entry];
-			expect(closeWin.data?.forkEntryId).toBe(forkB.id);
-			expect(closeWin.data?.status).toBe("squashed");
-			expect(closeWin.data?.decisionEntryId).toBe(decision.id);
-			expect(closeLose.data?.forkEntryId).toBe(forkA.id);
-			expect(closeLose.data?.status).toBe("rejected");
-			expect(closeLose.data?.note).toBe("chose stability over cleverness");
-			expect(entries.indexOf(decision)).toBeLessThan(entries.indexOf(closeWin));
-			expect(ofType(entries, "branch_summary")).toHaveLength(0);
+		// per-sibling close markers: winner squashed first (after the decision), loser rejected with epitaph
+		const closes = ofType(entries, "custom", "ctree/close");
+		expect(closes).toHaveLength(2);
+		const [closeWin, closeLose] = closes as [Entry, Entry];
+		expect(closeWin.data?.forkEntryId).toBe(forkB.id);
+		expect(closeWin.data?.status).toBe("squashed");
+		expect(closeWin.data?.decisionEntryId).toBe(decision.id);
+		expect(closeLose.data?.forkEntryId).toBe(forkA.id);
+		expect(closeLose.data?.status).toBe("rejected");
+		expect(closeLose.data?.note).toBe("chose stability over cleverness");
+		expect(entries.indexOf(decision)).toBeLessThan(entries.indexOf(closeWin));
+		expect(ofType(entries, "branch_summary")).toHaveLength(0);
 
-			// both drafts ran on the branch model; no agent turns at all
-			expect(mock.requests.map((r) => [r.hasTools, r.model])).toEqual([
-				[false, "branch-1"],
-				[false, "branch-1"],
-			]);
-			expect(mock.unexpected).toHaveLength(0);
+		// both drafts ran on the branch model; no agent turns at all
+		expect(mock.requests.map((r) => [r.hasTools, r.model])).toEqual([
+			[false, "branch-1"],
+			[false, "branch-1"],
+		]);
+		expect(mock.unexpected).toHaveLength(0);
 
-			expectGolden("tournament.jsonl", normalizeSession(raw));
-		},
-	);
+		expectGolden("tournament.jsonl", normalizeSession(raw));
+	});
 
 	it("crop: --auto --apply stubs the old fat tool result, keeps originals", { timeout: 120_000 }, async () => {
 		const mock = new MockOpenAI();

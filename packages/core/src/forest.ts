@@ -6,10 +6,10 @@
 
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { type ForkInfo, extractForks } from "./ctree.ts";
+import { extractForks, type ForkInfo } from "./ctree.ts";
 import { estimateContextTokens } from "./estimate.ts";
 import { parseSessionFile, readSessionHeader } from "./jsonl.ts";
-import { SessionTree, contextSlice } from "./tree.ts";
+import { contextSlice, SessionTree } from "./tree.ts";
 import type { SessionHeader } from "./types.ts";
 
 export interface ForkSummary {

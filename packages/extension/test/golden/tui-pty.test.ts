@@ -16,7 +16,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { SessionBuilder, filler } from "@pi-context-tree/core/testkit";
+import { filler, SessionBuilder } from "@pi-context-tree/core/testkit";
 import { describe, expect, it } from "vitest";
 import { EXTENSION_ENTRY, piPath, writeMockModels } from "./rpc-driver.ts";
 
