@@ -10,7 +10,7 @@ import { refreshAmbient } from "./ambient.ts";
 import { modelCompletions } from "./ctx-cache.ts";
 import { deriveState } from "./state.ts";
 
-const NAME_RE = /^[a-z0-9][a-z0-9._-]*$/i;
+const NAME_RE = /^[a-z0-9\u4e00-\u9fff][a-z0-9._\u4e00-\u9fff-]*$/i;
 
 export async function branchHandler(pi: PiLike, ctx: CmdCtxLike, args: string): Promise<void> {
 	const [name, modelRef] = args.trim().split(/\s+/).filter(Boolean);
@@ -19,7 +19,7 @@ export async function branchHandler(pi: PiLike, ctx: CmdCtxLike, args: string): 
 		return;
 	}
 	if (!NAME_RE.test(name)) {
-		ctx.ui.notify(`branch name "${name}" — use letters, digits, dot, dash, underscore`, "error");
+		ctx.ui.notify(`branch name "${name}" — use letters, digits, dot, dash, underscore, or Chinese (中文)`, "error");
 		return;
 	}
 
