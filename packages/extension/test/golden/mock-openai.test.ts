@@ -50,7 +50,7 @@ describe("MockOpenAI", () => {
 		const text = chunks.map((c) => (c.choices as { delta?: { content?: string } }[])[0]?.delta?.content ?? "").join("");
 		expect(text).toBe("hello there");
 		const finish = chunks.find((c) => (c.choices as { finish_reason?: string }[])[0]?.finish_reason);
-		expect((finish?.choices as { finish_reason: string }[])[0]?.finish_reason).toBe("stop");
+		expect((finish?.choices as { finish_reason: string }[] | undefined)?.[0]?.finish_reason).toBe("stop");
 		const usage = chunks.find((c) => c.usage) as { usage: { prompt_tokens: number; completion_tokens: number } };
 		expect(usage.usage.prompt_tokens).toBe(11);
 		expect(usage.usage.completion_tokens).toBe(3);
@@ -79,7 +79,7 @@ describe("MockOpenAI", () => {
 		expect(tc?.function.name).toBe("read");
 		expect(JSON.parse(tc?.function.arguments ?? "{}")).toEqual({ path: "big.txt" });
 		const finish = chunks.find((c) => (c.choices as { finish_reason?: string }[])[0]?.finish_reason);
-		expect((finish?.choices as { finish_reason: string }[])[0]?.finish_reason).toBe("tool_calls");
+		expect((finish?.choices as { finish_reason: string }[] | undefined)?.[0]?.finish_reason).toBe("tool_calls");
 	});
 
 	it("dispatches tool-less requests to draft matchers on the system prompt", async () => {
