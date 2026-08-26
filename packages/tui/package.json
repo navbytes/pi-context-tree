@@ -25,7 +25,7 @@
 	},
 	"devDependencies": {
 		"@earendil-works/pi-tui": "0.79.1",
-		"@xterm/headless": "^5.5.0"
+		"@xterm/headless": "^6.0.0"
 	},
 	"engines": {
 		"node": ">=22.19.0"
