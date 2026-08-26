@@ -9,6 +9,7 @@
 import {
 	CTREE_CLOSE,
 	CTREE_DECISION,
+	estimateContextTokens,
 	type ForkInfo,
 	renderDecisionRecord,
 	serializeEntries,
@@ -25,6 +26,7 @@ import {
 } from "./adapter.ts";
 import { refreshAmbient } from "./ambient.ts";
 import { DRAFT_SYSTEM_PROMPT, draftUserPrompt } from "./draft.ts";
+import { reviewRecord } from "./review.ts";
 import { branchEntries, deriveState, type SessionState } from "./state.ts";
 
 type MergeMode = "squash" | "no-llm" | "discard" | "tournament";
@@ -142,19 +144,23 @@ export async function mergeHandler(pi: PiLike, ctx: CmdCtxLike, args: string, de
 
 	// -- squash / no-llm / tournament: build the record ------------------------
 	const template = recordTemplate(fork, branchModelRef);
+	const branchSlice = branchEntries(state, fork.entryId);
+	const composeRecord = (): Promise<string> => {
+		const serialized = serializeEntries(branchSlice, { perEntryCap: 2000 });
+		return deps.draft(
+			ctx,
+			fork.data.branchModel,
+			DRAFT_SYSTEM_PROMPT,
+			draftUserPrompt(fork.data.name, template, serialized, parsed.note || undefined),
+		);
+	};
 	let draft: string;
 	if (mode === "no-llm") {
 		draft = template;
 	} else {
 		ctx.ui.notify(`drafting decision record with ${branchModelRef ?? "current model"}…`, "info");
 		try {
-			const serialized = serializeEntries(branchEntries(state, fork.entryId), { perEntryCap: 2000 });
-			draft = await deps.draft(
-				ctx,
-				fork.data.branchModel,
-				DRAFT_SYSTEM_PROMPT,
-				draftUserPrompt(fork.data.name, template, serialized, parsed.note || undefined),
-			);
+			draft = await composeRecord();
 		} catch (err) {
 			ctx.ui.notify(
 				`drafting failed (${(err as Error).message}) — falling back to manual template (--no-llm)`,
@@ -167,17 +173,24 @@ export async function mergeHandler(pi: PiLike, ctx: CmdCtxLike, args: string, de
 	const rejected: { name: string; reason: string }[] = [];
 	if (mode === "tournament") {
 		for (const sib of siblings) rejected.push({ name: sib.data.name, reason: await epitaphFor(deps, ctx, state, sib) });
-		const lines = [draft.trimEnd()];
-		if (!draft.includes("### Rejected alternatives")) lines.push("### Rejected alternatives");
-		for (const r of rejected) lines.push(`- **${r.name}:** ${r.reason}`);
-		draft = `${lines.join("\n")}\n`;
 	}
+	const withRejected = (base: string): string => {
+		if (rejected.length === 0) return base;
+		const lines = [base.trimEnd()];
+		if (!base.includes("### Rejected alternatives")) lines.push("### Rejected alternatives");
+		for (const r of rejected) lines.push(`- **${r.name}:** ${r.reason}`);
+		return `${lines.join("\n")}\n`;
+	};
+	draft = withRejected(draft);
 
-	// -- mandatory human gate (F2.2): nothing lands until accepted --------------
-	const confirmed = await ctx.ui.editor(
-		`Decision record — review/edit; closing without saving aborts the merge ('${fork.data.name}')`,
-		draft,
-	);
+	// -- mandatory human gate (F2.2): nothing lands until accepted. Overlay
+	// preview when the TUI is up (enter/e/r/esc, #33 flow 1); editor otherwise.
+	const confirmed = await reviewRecord(ctx, fork.data.name, draft, {
+		entryCount: branchSlice.length,
+		estTokens: estimateContextTokens(branchSlice),
+		model: branchModelRef,
+		regenerate: mode === "no-llm" ? undefined : async () => withRejected(await composeRecord()),
+	});
 	if (confirmed === undefined || confirmed.trim() === "") {
 		ctx.ui.notify("merge aborted — no record confirmed, nothing written", "info");
 		return;

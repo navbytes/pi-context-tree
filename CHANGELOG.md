@@ -6,7 +6,13 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-_Nothing yet._
+### Changed
+- `/merge` squash/tournament review (prototype for #33): the decision record now confirms in a
+  full-screen overlay preview — `Enter` accept · `e` edit in editor · `r` re-draft · `Esc` cancel —
+  with the blast radius (entries closed, ~tokens, drafting model) in the header. The editor is one
+  keypress away, and saving there still confirms; closing it without saving returns to the preview
+  instead of aborting the merge. Headless/RPC hosts keep the original editor gate unchanged. Nothing
+  lands without explicit confirmation either way (F2.2).
 
 ## [0.1.1] — 2026-06-13
 
