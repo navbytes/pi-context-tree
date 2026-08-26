@@ -6,6 +6,26 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+- Panel: `Ctrl+Q` from a view-only pi context now opens the panel read-only up front (with a
+  "run /panel to act" denial) instead of letting crop marks silently vanish when the action fails
+  after close.
+- Panel: applying a crop in one mode while the other mode (results vs whole-turns) still has marks
+  now warns once — `⏎` again confirms — instead of silently dropping the other mode's marks.
+- Panel: the overlay no longer shifts by one row when entering/leaving the inspect view.
+- Panel: `a` (auto-select) reports only newly marked entries, and says so when nothing new matched
+  instead of inviting an empty apply.
+- Panel: first-line previews truncate by code points — emoji/CJK can no longer be split into
+  mojibake at the cut.
+- pitree: the gauge shows `~N est · window unknown` instead of a permanent
+  "estimating… (awaiting next turn)" when the token estimate is known but no context window is.
+- `/decisions --export` takes the token *after* the flag as the output path (not the first token)
+  and expands a leading `~`.
+
+### Added
+- Panel: `PageUp`/`PageDown` paging in every view; `x` clears all marks in the current crop mode;
+  the tree footer now documents `g`/`G`.
+
 ### Changed
 - `/merge` squash/tournament review (prototype for #33): the decision record now confirms in a
   full-screen overlay preview — `Enter` accept · `e` edit in editor · `r` re-draft · `Esc` cancel —

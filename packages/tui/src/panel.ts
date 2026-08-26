@@ -64,6 +64,8 @@ export class ContextPanel {
 		if (matchesKey(data, "enter")) return "enter";
 		if (matchesKey(data, "escape")) return "esc";
 		if (matchesKey(data, "space")) return "space";
+		if (matchesKey(data, "pageUp")) return "pgup";
+		if (matchesKey(data, "pageDown")) return "pgdn";
 		if (data.length === 1 && data >= " " && data <= "~") return data;
 		return undefined;
 	}
@@ -82,8 +84,10 @@ export class ContextPanel {
 			` ${renderGauge({ tokens: h.tokens, window: h.window, estimated: h.estimated, barWidth: Math.min(30, Math.max(10, width - 50)) }, t)}`,
 		);
 		lines.push(t.dim("─".repeat(Math.max(0, width))));
+		// slot always present — a conditional line here shifts the overlay by a row
+		// when entering/leaving inspect (fixed-height contract, mockup)
 		const sect = this.vm.sectionTitle();
-		if (sect) lines.push(` ${t.dim(sect)}`);
+		lines.push(sect ? ` ${t.dim(sect)}` : "");
 
 		const rows = this.vm.rows();
 		this.consumerMax = rows.reduce((m, r) => (r.kind === "consumer" ? Math.max(m, r.tokens ?? 0) : m), 0);

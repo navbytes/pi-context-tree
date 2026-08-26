@@ -45,6 +45,8 @@ export interface PanelInput {
 	/** real token count from pi's getContextUsage(); null = unknown (post-compaction) */
 	usageTokens?: number | null;
 	readOnly?: boolean;
+	/** shown when a mutation is denied in read-only mode (defaults to the pitree wording) */
+	readOnlyReason?: string;
 	dryRun?: boolean;
 	initialView?: PanelView;
 	premark?: string[];
@@ -104,10 +106,15 @@ export interface PanelHeader {
 }
 
 const FIRST_LINE_MAX = 88;
+/** rows jumped by pgup/pgdn — fixed, since the VM doesn't know the host's body height */
+const PAGE_STEP = 15;
 
 function firstLine(text: string): string {
 	const line = text.split("\n", 1)[0] ?? "";
-	return line.length > FIRST_LINE_MAX ? `${line.slice(0, FIRST_LINE_MAX)}…` : line;
+	// truncate by code points, not UTF-16 units — a slice through a surrogate
+	// pair would render mojibake (terminal-width fitting happens render-side)
+	const cps = [...line];
+	return cps.length > FIRST_LINE_MAX ? `${cps.slice(0, FIRST_LINE_MAX).join("")}…` : line;
 }
 
 export class PanelVm {
@@ -128,6 +135,8 @@ export class PanelVm {
 	private readonly marks = new Set<string>();
 	private readonly turnMarks = new Set<string>();
 	private armedId: string | null = null;
+	/** apply pressed once while the *other* crop mode still has marks — confirm before dropping them */
+	private crossModeArm: "result" | "turn" | null = null;
 	private inspectId: string | null = null;
 
 	constructor(input: PanelInput) {
@@ -454,10 +463,11 @@ export class PanelVm {
 		this.view = v;
 		this.sel = 0;
 		this.armedId = null;
+		this.crossModeArm = null;
 	}
 
 	private deny(): VmEffect {
-		return { notify: "read-only (standalone pitree) — open the panel inside pi to act" };
+		return { notify: this.input.readOnlyReason ?? "read-only (standalone pitree) — open the panel inside pi to act" };
 	}
 
 	handleKey(key: string): VmEffect {
@@ -473,6 +483,12 @@ export class PanelVm {
 			case "k":
 			case "up":
 				this.sel = Math.max(0, this.sel - 1);
+				return {};
+			case "pgdn":
+				this.sel = Math.min(max, this.sel + PAGE_STEP);
+				return {};
+			case "pgup":
+				this.sel = Math.max(0, this.sel - PAGE_STEP);
 				return {};
 			case "g":
 				this.sel = 0;
@@ -536,6 +552,7 @@ export class PanelVm {
 				this.cropMode = this.cropMode === "turn" ? "result" : "turn";
 				this.sel = 0;
 				this.armedId = null;
+				this.crossModeArm = null;
 				return {};
 			}
 			return this.cropMode === "turn" ? this.handleTurnKey(key, readOnly) : this.handleCropKey(key, readOnly);
@@ -581,6 +598,7 @@ export class PanelVm {
 			case "space": {
 				if (readOnly) return this.deny();
 				if (!cand) return {};
+				this.crossModeArm = null;
 				if (this.marks.has(cand.entryId)) {
 					this.marks.delete(cand.entryId);
 					this.armedId = null;
@@ -597,12 +615,34 @@ export class PanelVm {
 			case "a": {
 				if (readOnly) return this.deny();
 				const ids = autoSelect(cands, {});
-				for (const id of ids) this.marks.add(id);
-				return { notify: `--auto marked ${ids.length} (protected skipped) — review, then ⏎ to apply` };
+				let added = 0;
+				for (const id of ids) {
+					if (!this.marks.has(id)) {
+						this.marks.add(id);
+						added += 1;
+					}
+				}
+				if (added === 0) return { notify: "auto: nothing new to mark (protected and already-marked skipped)" };
+				return { notify: `--auto marked ${added} (protected skipped) — review, then ⏎ to apply` };
+			}
+			case "x": {
+				if (readOnly) return this.deny();
+				const n = this.marks.size;
+				this.marks.clear();
+				this.armedId = null;
+				this.crossModeArm = null;
+				return { notify: n === 0 ? "no marks to clear" : `cleared ${n} mark(s)` };
 			}
 			case "enter": {
 				if (readOnly) return this.deny();
 				if (this.marks.size === 0) return { notify: "nothing marked — space to mark entries" };
+				if (this.turnMarks.size > 0 && this.crossModeArm !== "result") {
+					this.crossModeArm = "result";
+					return {
+						notify: `${this.turnMarks.size} whole-turn mark(s) pending in turn mode (t) would be dropped — ⏎ again to apply results only`,
+					};
+				}
+				this.crossModeArm = null;
 				const plan = planCrop(this.tree, this.leafId, [...this.marks]);
 				return { action: { type: "crop-apply", plan, dryRun: this.input.dryRun ?? false } };
 			}
@@ -625,11 +665,26 @@ export class PanelVm {
 				}
 				if (this.turnMarks.has(turn.userId)) this.turnMarks.delete(turn.userId);
 				else this.turnMarks.add(turn.userId);
+				this.crossModeArm = null;
 				return {};
+			}
+			case "x": {
+				if (readOnly) return this.deny();
+				const n = this.turnMarks.size;
+				this.turnMarks.clear();
+				this.crossModeArm = null;
+				return { notify: n === 0 ? "no marks to clear" : `cleared ${n} mark(s)` };
 			}
 			case "enter": {
 				if (readOnly) return this.deny();
 				if (this.turnMarks.size === 0) return { notify: "no turns marked — space to mark a whole Q&A turn" };
+				if (this.marks.size > 0 && this.crossModeArm !== "turn") {
+					this.crossModeArm = "turn";
+					return {
+						notify: `${this.marks.size} result mark(s) pending in results mode (t) would be dropped — ⏎ again to remove turns only`,
+					};
+				}
+				this.crossModeArm = null;
 				const plan = planRemoveTurns(this.tree, this.leafId, [...this.turnMarks]);
 				return { action: { type: "crop-apply", plan, dryRun: this.input.dryRun ?? false } };
 			}
@@ -680,11 +735,11 @@ export class PanelVm {
 	footerHelp(): string {
 		switch (this.view) {
 			case "tree":
-				return "↑↓/jk move · ⏎ jump/fold · b branch · m merge · c crop · i inspect · D decisions · u consumers · q close";
+				return "↑↓ move · ⇞⇟ page · g/G ends · ⏎ jump/fold · b branch · m merge · c crop · i inspect · D decisions · u consumers · q close";
 			case "crop":
 				return this.cropMode === "turn"
-					? "space mark whole turn · ⏎ apply → new branch point · t results mode · esc back · q close"
-					: "space mark · a auto · ⏎ apply → new branch point · t turn mode · esc back · q close";
+					? "space mark whole turn · x clear · ⏎ apply → new branch point · t results mode · esc back · q close"
+					: "space mark · a auto · x clear · ⏎ apply → new branch point · t turn mode · esc back · q close";
 			case "consumers":
 				return "c crop the big ones · esc back · q close";
 			case "decisions":

@@ -15,8 +15,13 @@ export interface GaugeInput {
 
 export function renderGauge(input: GaugeInput, theme: CtreeTheme): string {
 	const barWidth = input.barWidth ?? 30;
-	if (input.tokens === null || !input.window || input.window <= 0) {
+	if (input.tokens === null) {
 		return `${theme.dim("CONTEXT")} ${theme.dim("░".repeat(barWidth))} ${theme.dim("estimating… (awaiting next turn)")}`;
+	}
+	// tokens known but no window (standalone pitree): show the estimate — there
+	// is no "next turn" coming, and "estimating…" would be a permanent lie
+	if (!input.window || input.window <= 0) {
+		return `${theme.dim("CONTEXT")} ${theme.dim("░".repeat(barWidth))} ~${fmtTokens(input.tokens)} est · ${theme.dim("window unknown")}`;
 	}
 	const pct = (input.tokens / input.window) * 100;
 	const b: Band = band(pct);

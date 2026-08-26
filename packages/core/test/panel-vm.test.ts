@@ -359,3 +359,65 @@ describe("PanelVm read-only mode (pitree)", () => {
 		expect(p.rows().every((r) => !r.marked)).toBe(true);
 	});
 });
+
+describe("PanelVm review fixes", () => {
+	it("pages with pgdn/pgup, clamped to the row range", () => {
+		const { vm: p } = vm();
+		const max = p.rows().length - 1;
+		p.handleKey("pgdn");
+		expect(p.sel).toBe(Math.min(max, 15));
+		p.handleKey("pgup");
+		expect(p.sel).toBe(0);
+	});
+
+	it("'a' reports only newly marked entries and says so when nothing new matches", () => {
+		const { vm: p } = vm();
+		p.handleKey("c");
+		const first = p.handleKey("a");
+		expect(first.notify).toMatch(/^--auto marked \d+ /);
+		const second = p.handleKey("a");
+		expect(second.notify).toContain("nothing new to mark");
+	});
+
+	it("'x' clears all marks in the current mode", () => {
+		const { vm: p } = vm();
+		p.handleKey("c");
+		p.handleKey("a");
+		const cleared = p.handleKey("x");
+		expect(cleared.notify).toMatch(/^cleared \d+ mark/);
+		expect(p.handleKey("enter").notify).toContain("nothing marked");
+		expect(p.handleKey("x").notify).toBe("no marks to clear");
+	});
+
+	it("applying in one crop mode warns once before dropping the other mode's marks", () => {
+		const { vm: p } = vm();
+		p.handleKey("c");
+		p.handleKey("a"); // result-mode marks
+		p.handleKey("t"); // switch to whole-turn mode
+		p.handleKey("space"); // mark the first turn (not the current one)
+		const warned = p.handleKey("enter");
+		expect(warned.action).toBeUndefined();
+		expect(warned.notify).toContain("result mark(s) pending");
+		const applied = p.handleKey("enter");
+		expect(applied.action?.type).toBe("crop-apply");
+	});
+
+	it("truncates first lines by code points — no surrogate is ever split", () => {
+		const b = new SessionBuilder();
+		b.user("🎉".repeat(120));
+		b.assistant("ok");
+		const p = new PanelVm({ entries: b.build().entries, project: "p" });
+		const row = p.rows().find((r) => r.text.startsWith("user:"));
+		expect(row).toBeDefined();
+		expect(row?.text.endsWith("…")).toBe(true);
+		// a high surrogate not followed by a low surrogate = mojibake
+		expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(row?.text ?? "")).toBe(false);
+	});
+
+	it("read-only denial uses the host-provided reason when given", () => {
+		const { vm: p } = vm({ readOnly: true, readOnlyReason: "view-only from the shortcut — run /panel to act" });
+		expect(p.handleKey("m").notify).toBe("view-only from the shortcut — run /panel to act");
+		const { vm: q } = vm({ readOnly: true });
+		expect(q.handleKey("m").notify).toContain("standalone pitree");
+	});
+});
