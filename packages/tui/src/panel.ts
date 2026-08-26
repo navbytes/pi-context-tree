@@ -43,6 +43,9 @@ export class ContextPanel {
 		return this.vm;
 	}
 
+	/** pi-tui Component requires it; this component re-renders from the vm each frame */
+	invalidate(): void {}
+
 	handleInput(data: string): void {
 		const key = this.mapKey(data);
 		if (!key) return;

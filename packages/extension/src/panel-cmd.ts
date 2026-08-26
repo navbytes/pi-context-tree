@@ -64,8 +64,8 @@ export async function openPanel(
 	// notify line, scroll hint). 95% width left the chat showing in the margins.
 	const PANEL_CHROME_ROWS = 9;
 	const action = await ctx.ui.custom<PanelAction>(
-		(tui: unknown, _theme: unknown, _keybindings: unknown, done: (a: PanelAction) => void) => {
-			const rows = (tui as { terminal?: { rows?: number } } | undefined)?.terminal?.rows;
+		(tui, _theme, _keybindings, done) => {
+			const rows = tui?.terminal?.rows;
 			const maxBody = Math.max(8, (rows ?? 34) - PANEL_CHROME_ROWS);
 			return new ContextPanel({ input, maxBody, onAction: (a) => done(a) });
 		},
