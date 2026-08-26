@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SessionBuilder, filler } from "../src/testkit.ts";
+import { filler, SessionBuilder } from "../src/testkit.ts";
 import { PanelVm } from "../src/vm/panel.ts";
 
 /** branched session: squashed fork w/ sibling work, dangling fork, active fork */

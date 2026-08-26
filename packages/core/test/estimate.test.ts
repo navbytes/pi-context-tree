@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { aggregateConsumers } from "../src/consumers.ts";
 import {
-	IMAGE_CHARS,
 	band,
 	entryChars,
 	estimateContextTokens,
 	estimateEntryTokens,
 	fmtTokens,
+	IMAGE_CHARS,
 } from "../src/estimate.ts";
-import { SessionBuilder, filler } from "../src/testkit.ts";
-import { SessionTree, contextSlice } from "../src/tree.ts";
+import { filler, SessionBuilder } from "../src/testkit.ts";
+import { contextSlice, SessionTree } from "../src/tree.ts";
 import type { SessionEntry } from "../src/types.ts";
 
 function entryOf(build: (b: SessionBuilder) => void): SessionEntry {

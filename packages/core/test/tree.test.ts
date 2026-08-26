@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SessionBuilder } from "../src/testkit.ts";
-import { SessionTree, contextSlice } from "../src/tree.ts";
+import { contextSlice, SessionTree } from "../src/tree.ts";
 
 /** trunk: u1 → a1 → t1 → a2 ; branch from a1: u2 → a3 (leaf) */
 function branched() {

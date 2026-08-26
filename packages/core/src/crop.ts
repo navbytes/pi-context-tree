@@ -10,7 +10,7 @@
 import { createHash } from "node:crypto";
 import { estimateEntryTokens, fmtTokens } from "./estimate.ts";
 import { serializeEntry } from "./serialize.ts";
-import { type SessionTree, contextSlice } from "./tree.ts";
+import { contextSlice, type SessionTree } from "./tree.ts";
 import type { CtreeCropDrop, CtreeCropStub, MessageEntry, SessionEntry, UserContent } from "./types.ts";
 import { isMessageEntry } from "./types.ts";
 

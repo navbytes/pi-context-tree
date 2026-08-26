@@ -5,7 +5,7 @@
  */
 
 import { CTREE_FORK } from "@pi-context-tree/core";
-import { type CmdCtxLike, type PiLike, appendAndGetId, leafIdOf, modelKey, resolveModel } from "./adapter.ts";
+import { appendAndGetId, type CmdCtxLike, leafIdOf, modelKey, type PiLike, resolveModel } from "./adapter.ts";
 import { refreshAmbient } from "./ambient.ts";
 import { modelCompletions } from "./ctx-cache.ts";
 import { deriveState } from "./state.ts";

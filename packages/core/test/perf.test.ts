@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { estimateContextTokens } from "../src/estimate.ts";
 import { parseSessionFile } from "../src/jsonl.ts";
-import { SessionBuilder, filler } from "../src/testkit.ts";
-import { SessionTree, contextSlice } from "../src/tree.ts";
+import { filler, SessionBuilder } from "../src/testkit.ts";
+import { contextSlice, SessionTree } from "../src/tree.ts";
 
 describe("50MB session", () => {
 	it("stream-parses and models a ~50MB file in reasonable time", { timeout: 60_000 }, async () => {
