@@ -189,3 +189,109 @@ describe("/merge default mode (bare = squash, --pick = selector)", () => {
 		expect(close.forkEntryId).toBe(forkId);
 	});
 });
+
+// #33 flow 1: with a TUI host (ui.custom), the F2.2 gate is the overlay preview;
+// the editor opens only on 'e'. Each element of keysPerMount drives one overlay
+// mount (regenerate and editor-close remount the preview).
+function hostOverlay(w: FakeWorld, keysPerMount: string[][]): void {
+	let mount = 0;
+	w.ui.custom = <T>(factory: unknown) =>
+		new Promise<T>((resolve) => {
+			const build = factory as (
+				tui: unknown,
+				theme: unknown,
+				kb: unknown,
+				done: (a: T) => void,
+			) => {
+				handleInput(data: string): void;
+			};
+			const component = build({ terminal: { rows: 30 } }, undefined, undefined, resolve);
+			for (const key of keysPerMount[mount] ?? ["\x1b"]) component.handleInput(key);
+			mount += 1;
+		});
+}
+
+describe("/merge --squash overlay review (F2.2 via ui.custom)", () => {
+	it("enter accepts the draft without touching the editor", async () => {
+		const w = makeFake();
+		await seedBranch(w);
+		hostOverlay(w, [["\r"]]);
+
+		await mergeHandler(w.pi, w.ctx, "--squash", depsWith());
+
+		const decisions = entriesByType(w.session, "custom_message", "ctree/decision");
+		expect(decisions).toHaveLength(1);
+		expect((decisions[0] as { content?: string }).content).toBe(CANNED_RECORD);
+		expect(entriesByType(w.session, "custom", "ctree/close")).toHaveLength(1);
+	});
+
+	it("esc cancels — nothing written", async () => {
+		const w = makeFake();
+		await seedBranch(w);
+		hostOverlay(w, [["\x1b"]]);
+
+		await mergeHandler(w.pi, w.ctx, "--squash", depsWith());
+
+		expect(entriesByType(w.session, "custom_message", "ctree/decision")).toHaveLength(0);
+		expect(entriesByType(w.session, "custom", "ctree/close")).toHaveLength(0);
+		expect(w.ui.notes().some((n) => n.includes("merge aborted"))).toBe(true);
+	});
+
+	it("e opens the editor; saving confirms the edited record", async () => {
+		const w = makeFake();
+		await seedBranch(w);
+		hostOverlay(w, [["e"]]);
+		w.ui.editorQueue.push("## Decision: fix-flaky-test (EDITED)\nbody");
+
+		await mergeHandler(w.pi, w.ctx, "--squash", depsWith());
+
+		const decisions = entriesByType(w.session, "custom_message", "ctree/decision");
+		expect((decisions[0] as { content?: string }).content).toContain("(EDITED)");
+	});
+
+	it("closing the editor without saving returns to the preview instead of aborting", async () => {
+		const w = makeFake();
+		await seedBranch(w);
+		hostOverlay(w, [["e"], ["\r"]]);
+		w.ui.editorQueue.push(undefined);
+
+		await mergeHandler(w.pi, w.ctx, "--squash", depsWith());
+
+		const decisions = entriesByType(w.session, "custom_message", "ctree/decision");
+		expect(decisions).toHaveLength(1);
+		expect((decisions[0] as { content?: string }).content).toBe(CANNED_RECORD);
+	});
+
+	it("falls back to the editor gate when ui.custom resolves without an action (RPC hosts)", async () => {
+		const w = makeFake();
+		await seedBranch(w);
+		w.ui.custom = <T>(_factory: unknown) => Promise.resolve(undefined as T);
+		w.ui.editorQueue.push("__ACCEPT_PREFILL__");
+
+		await mergeHandler(w.pi, w.ctx, "--squash", depsWith());
+
+		const decisions = entriesByType(w.session, "custom_message", "ctree/decision");
+		expect(decisions).toHaveLength(1);
+		expect((decisions[0] as { content?: string }).content).toBe(CANNED_RECORD);
+	});
+
+	it("r re-drafts and the next accept lands the fresh record", async () => {
+		const w = makeFake();
+		await seedBranch(w);
+		hostOverlay(w, [["r"], ["\r"]]);
+		let n = 0;
+		const deps: Deps = {
+			draft: async () => {
+				n += 1;
+				return `## Decision: rev ${n}\n`;
+			},
+		};
+
+		await mergeHandler(w.pi, w.ctx, "--squash", deps);
+
+		expect(n).toBe(2);
+		const decisions = entriesByType(w.session, "custom_message", "ctree/decision");
+		expect((decisions[0] as { content?: string }).content).toContain("rev 2");
+		expect(w.ui.notes().some((m) => m.includes("re-drafting decision record"))).toBe(true);
+	});
+});
