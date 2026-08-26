@@ -44,6 +44,24 @@ describe("/branch", () => {
 		expect(calls.setModel).toHaveLength(0);
 	});
 
+	it("accepts Chinese branch names and mirrors them into labels", async () => {
+		const { pi, ctx, ui, session, calls } = makeFake();
+		session.user("kickoff");
+
+		await branchHandler(pi, ctx, "修复缓存");
+
+		const forks = entriesByType(session, "custom", "ctree/fork");
+		expect(forks).toHaveLength(1);
+		expect((ctreeForkData(forks[0]!) as CtreeForkData).name).toBe("修复缓存");
+		expect(calls.labels).toEqual([[forks[0]!.id, "修复缓存"]]);
+		expect(ui.notes().some((n) => n.includes("branched: 修复缓存"))).toBe(true);
+
+		// other non-ASCII stays rejected — only the CJK range was added
+		await branchHandler(pi, ctx, "пример");
+		await branchHandler(pi, ctx, "🚀launch");
+		expect(entriesByType(session, "custom", "ctree/fork")).toHaveLength(1);
+	});
+
 	it("resolves provider/id model refs", async () => {
 		const { pi, ctx, session, calls } = makeFake();
 		session.user("kickoff");
