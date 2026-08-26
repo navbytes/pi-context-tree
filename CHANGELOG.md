@@ -45,6 +45,9 @@ _Nothing yet._
 - Toolchain: TypeScript 6, Vitest 4, Biome 2 (config migrated; the static docs mockup is excluded
   from lint, matching Biome 1.x's scope), `@types/node` 25, `@xterm/headless` 6, postcss 8.5.25,
   and GitHub Actions `checkout`/`setup-node` v7.
+- The release workflow can also be run manually (`workflow_dispatch`): it gates and cuts the
+  release for the version on `main`, creating the tag server-side — for maintainers working from
+  environments that can't push tags.
 
 ### Security
 - undici `8.5.0` → `8.9.0` (via the pi bump): fixes GHSA-4cwx-7wf7-3272 (high) and four
