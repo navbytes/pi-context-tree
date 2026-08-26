@@ -1,6 +1,6 @@
 {
 	"name": "@pi-context-tree/core",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"type": "module",
 	"description": "pi-independent session parsing, tree/forest model, token estimation, ctree status, crop planning, decision records",
 	"main": "./dist/index.js",
