@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { autoSelect, cropCandidates, planCrop, renderReconstruction, stubLine } from "../src/crop.ts";
-import { SessionBuilder, filler } from "../src/testkit.ts";
+import { filler, SessionBuilder } from "../src/testkit.ts";
 import { SessionTree } from "../src/tree.ts";
 
 /**

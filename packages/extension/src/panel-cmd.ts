@@ -9,17 +9,16 @@ import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
 	type CtreeDecisionDetails,
+	decisionsOnPath,
+	exportDecisionsMarkdown,
 	type PanelAction,
 	type PanelInput,
 	type PanelView,
 	SessionTree,
-	decisionsOnPath,
-	exportDecisionsMarkdown,
 	textOfContent,
 } from "@pi-context-tree/core";
 import { ContextPanel } from "@pi-context-tree/tui";
-import { type CmdCtxLike, type CtxLike, type Deps, type PiLike, leafIdOf, projectName } from "./adapter.ts";
-import { entriesOf } from "./adapter.ts";
+import { type CmdCtxLike, type CtxLike, type Deps, entriesOf, leafIdOf, type PiLike, projectName } from "./adapter.ts";
 import { branchHandler } from "./branch.ts";
 
 export interface PanelOpenOptions {

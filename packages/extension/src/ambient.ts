@@ -18,7 +18,7 @@ import { aggregateConsumers, band, contextSlice, estimateContextTokens } from "@
 import { defaultTheme, renderGauge } from "@pi-context-tree/tui";
 import { type CtxLike, type PiLike, projectName } from "./adapter.ts";
 import { rememberCtx } from "./ctx-cache.ts";
-import { type SessionState, deriveState } from "./state.ts";
+import { deriveState, type SessionState } from "./state.ts";
 
 let warnedRed = false;
 

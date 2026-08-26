@@ -1,6 +1,6 @@
 import { TUI } from "@earendil-works/pi-tui";
 import type { PanelAction } from "@pi-context-tree/core";
-import { SessionBuilder, filler } from "@pi-context-tree/core/testkit";
+import { filler, SessionBuilder } from "@pi-context-tree/core/testkit";
 import { describe, expect, it } from "vitest";
 import { ContextPanel } from "../src/panel.ts";
 import { VirtualTerminal } from "./virtual-terminal.ts";

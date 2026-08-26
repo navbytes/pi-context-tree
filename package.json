@@ -30,9 +30,13 @@
 	"image": "https://raw.githubusercontent.com/navbytes/pi-context-tree/main/docs/assets/demo.gif",
 	"video": "https://raw.githubusercontent.com/navbytes/pi-context-tree/main/docs/assets/demo.mp4",
 	"pi": {
-		"extensions": ["./extensions"]
+		"extensions": [
+			"./extensions"
+		]
 	},
-	"workspaces": ["packages/*"],
+	"workspaces": [
+		"packages/*"
+	],
 	"engines": {
 		"node": ">=22.19.0"
 	},
@@ -54,5 +58,7 @@
 		"@biomejs/biome": "^2.5.0",
 		"vitest": "^3.2.4"
 	},
-	"files": ["extensions"]
+	"files": [
+		"extensions"
+	]
 }

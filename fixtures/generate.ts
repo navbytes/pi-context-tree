@@ -6,7 +6,7 @@
 
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { SessionBuilder, filler } from "../packages/core/src/testkit.ts";
+import { filler, SessionBuilder } from "../packages/core/src/testkit.ts";
 
 const OUT = import.meta.dirname;
 

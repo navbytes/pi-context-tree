@@ -8,7 +8,7 @@
  */
 
 import { matchesKey, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
-import { type PanelAction, type PanelInput, type PanelRow, PanelVm, fmtTokens } from "@pi-context-tree/core";
+import { fmtTokens, type PanelAction, type PanelInput, type PanelRow, PanelVm } from "@pi-context-tree/core";
 import { renderGauge } from "./gauge.ts";
 import { type CtreeTheme, defaultTheme } from "./theme.ts";
 

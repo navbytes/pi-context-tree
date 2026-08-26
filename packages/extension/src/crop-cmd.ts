@@ -6,17 +6,17 @@
  */
 
 import {
+	autoSelect,
+	type CropPlan,
 	CTREE_CROP,
 	CTREE_CROP_TAIL,
-	type CropPlan,
-	SessionTree,
-	autoSelect,
 	cropCandidates,
 	fmtTokens,
 	planCrop,
 	renderReconstruction,
+	SessionTree,
 } from "@pi-context-tree/core";
-import { type CmdCtxLike, type PiLike, leafIdOf } from "./adapter.ts";
+import { type CmdCtxLike, leafIdOf, type PiLike } from "./adapter.ts";
 import { refreshAmbient } from "./ambient.ts";
 import { openPanel } from "./panel-cmd.ts";
 import { deriveState } from "./state.ts";

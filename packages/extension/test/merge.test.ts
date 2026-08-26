@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Deps } from "../src/adapter.ts";
 import { branchHandler } from "../src/branch.ts";
 import { mergeHandler } from "../src/merge.ts";
-import { type FakeWorld, entriesByType, makeFake } from "./fake-pi.ts";
+import { entriesByType, type FakeWorld, makeFake } from "./fake-pi.ts";
 
 const CANNED_RECORD = "## Decision: fix-flaky-test\n**Outcome:** fixed tmpdir collision.\n";
 

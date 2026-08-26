@@ -1,7 +1,7 @@
-import { SessionTree, cropCandidates, planCrop, planRemoveTurns } from "@pi-context-tree/core";
+import { cropCandidates, planCrop, planRemoveTurns, SessionTree } from "@pi-context-tree/core";
 import { describe, expect, it } from "vitest";
 import { applyCropPlan, cropHandler, parseCropFlags } from "../src/crop-cmd.ts";
-import { type FakeWorld, entriesByType, makeFake } from "./fake-pi.ts";
+import { entriesByType, type FakeWorld, makeFake } from "./fake-pi.ts";
 
 function seedBigSession(w: FakeWorld): { snap1: string; snap2: string } {
 	w.session.user("audit my tabs");

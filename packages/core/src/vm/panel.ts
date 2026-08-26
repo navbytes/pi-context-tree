@@ -7,19 +7,19 @@
 
 import { aggregateConsumers } from "../consumers.ts";
 import {
+	autoSelect,
 	type ContextTurn,
 	type CropCandidate,
 	type CropPlan,
-	autoSelect,
 	contextTurns,
 	cropCandidates,
 	planCrop,
 	planRemoveTurns,
 } from "../crop.ts";
-import { type ForkInfo, type ForkPresentation, decisionsOnPath, extractForks, nearestOpenFork } from "../ctree.ts";
+import { decisionsOnPath, extractForks, type ForkInfo, type ForkPresentation, nearestOpenFork } from "../ctree.ts";
 import { type Band, band, estimateContextTokens, estimateEntryTokens, fmtTokens } from "../estimate.ts";
 import { serializeEntry, textOfContent } from "../serialize.ts";
-import { SessionTree, contextSlice } from "../tree.ts";
+import { contextSlice, SessionTree } from "../tree.ts";
 import type { CtreeCropData, CtreeDecisionDetails, SessionEntry, UserContent } from "../types.ts";
 import {
 	CTREE_CLOSE,
