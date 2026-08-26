@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.2.0] — 2026-08-26
+
+### Added
+- `/branch` names can contain Chinese characters (CJK Unified Ideographs) — contributed by
+  [@chaosorder010](https://github.com/chaosorder010), ported from their fork with authorship.
+- Panel: `PageUp`/`PageDown` paging in every view; `x` clears all marks in the current crop mode;
+  the tree footer now documents `g`/`G`.
+
 ### Fixed
 - Panel: `Ctrl+Q` from a view-only pi context now opens the panel read-only up front (with a
   "run /panel to act" denial) instead of letting crop marks silently vanish when the action fails
@@ -22,17 +32,26 @@ All notable changes to this project are documented here. The format is based on
 - `/decisions --export` takes the token *after* the flag as the output path (not the first token)
   and expands a leading `~`.
 
-### Added
-- Panel: `PageUp`/`PageDown` paging in every view; `x` clears all marks in the current crop mode;
-  the tree footer now documents `g`/`G`.
-
 ### Changed
-- `/merge` squash/tournament review (prototype for #33): the decision record now confirms in a
+- `/merge` squash/tournament review (#33 flow 1): the decision record now confirms in a
   full-screen overlay preview — `Enter` accept · `e` edit in editor · `r` re-draft · `Esc` cancel —
   with the blast radius (entries closed, ~tokens, drafting model) in the header. The editor is one
   keypress away, and saving there still confirms; closing it without saving returns to the preview
   instead of aborting the merge. Headless/RPC hosts keep the original editor gate unchanged. Nothing
   lands without explicit confirmation either way (F2.2).
+- Pinned pi bumped `0.79.1` → `@earendil-works/*@0.84.3`; golden files re-recorded for pi's
+  additive session-format fields (`usage.reasoning`, `rawStopReason`) — no behavior change in
+  what this extension writes.
+- Toolchain: TypeScript 6, Vitest 4, Biome 2 (config migrated; the static docs mockup is excluded
+  from lint, matching Biome 1.x's scope), `@types/node` 25, `@xterm/headless` 6, postcss 8.5.25,
+  and GitHub Actions `checkout`/`setup-node` v7.
+
+### Security
+- undici `8.5.0` → `8.9.0` (via the pi bump): fixes GHSA-4cwx-7wf7-3272 (high) and four
+  medium-severity cache/cookie/header advisories.
+- Transitive dev-dependency fixes: nanoid `3.3.18` (GHSA-2v37-7h3g-55p8, high) and protobufjs
+  `7.6.5` (GHSA-j3f2-48v5-ccww, moderate); the vulnerable esbuild left the dependency tree
+  entirely with Vitest 4. `npm audit`: 0 vulnerabilities.
 
 ## [0.1.1] — 2026-06-13
 
@@ -65,6 +84,7 @@ First public release — a git-style branch/merge/crop workflow plus a full-scre
 - **CI** — lint/types/unit per push, integration against the pinned pi (keyless), and a non-blocking `pi@latest` drift lane.
 - **Release** — pushing a `vX.Y.Z` tag runs the gate and cuts a GitHub Release from this changelog.
 
-[Unreleased]: https://github.com/navbytes/pi-context-tree/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/navbytes/pi-context-tree/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/navbytes/pi-context-tree/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/navbytes/pi-context-tree/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/navbytes/pi-context-tree/releases/tag/v0.1.0
