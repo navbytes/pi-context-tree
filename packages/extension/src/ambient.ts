@@ -148,7 +148,10 @@ export function refreshAmbient(pi: PiLike, ctx: CtxLike): void {
 	if (pct !== null) {
 		const b = band(gaugeTokens ?? 0);
 		// honest: no fake-precise percent while estimating — band word + est marker
-		gaugeText = estimated ? `ctx ${b} · est${trend}` : `ctx ${pct.toFixed(1)}% ${b}${trend}`;
+		// trend/attribution belongs on the gauge surface, which has room for it; the
+		// footer is the compact always-visible reading. Rendering `▲ +24% (bucket)`
+		// in both places just says it twice.
+		gaugeText = estimated ? `ctx ${b} · est` : `ctx ${pct.toFixed(1)}% ${b}`;
 		nudge(ctx, b, gaugeTokens, window);
 	} else if (usage) {
 		gaugeText = "ctx est…";
