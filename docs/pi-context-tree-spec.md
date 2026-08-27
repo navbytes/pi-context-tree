@@ -209,7 +209,14 @@ Note (verified 0.79.1): the decision record rides pi's native `custom_message` e
 
 - **Merge/squash & tournament:** as v0.1 §4.1–4.2, with the added discard path (no LLM call) and the F2.5 interop step. Write decision before close markers; batch the appends.
 - **Crop (revised after source verification):** pi's compaction replaces a contiguous **prefix** only (everything before `firstKeptEntryId`) — per-entry filtered history CANNOT ride the compaction mechanism, and no extension API appends `message`-type entries or removes individual ones. v1 design: score → interactive review (pre-marked if `--auto`) → apply = `navigateTree` to the entry *before* the first cropped entry, then append ONE `custom_message` reconstruction block carrying the kept tail content with stub lines (`[cropped: <tool> <primary-arg>, <size>, <sha-8>]`) in place of cropped bodies, plus a `ctree/crop` custom entry recording {sourceLeafId, stubbed[]}. Append-only; originals stay on the abandoned branch, fully recoverable. Trade-off: the reconstructed tail collapses message granularity into one block — acceptable because the common case (Scenario D) crops near-tail giants with little after them, and the crop review screen shows exactly what gets reconstructed. Better long-term path: small upstream PR to pi exposing branch-with-filtered-history (or extension-level message append); revisit at M6. Invariants unchanged: `tool_use`/`tool_result` pairing represented in the stub; latest-per-tool protected; dry-run side-effect-free.
-- **Token estimation:** chars/4, labeled `~`; per-node cached in the panel's view model; gauge denominators from pi's model catalog context-window field.
+- **Token estimation:** context size anchors on the last assistant turn's real `message.usage` and
+  chars/4-estimates only the entries after it (pi parity — `compaction.js:131`). The anchor is what
+  makes the system prompt and tool schemas visible: they are charged every turn and appear in no
+  session entry, so a pure chars/4 sum reads far low (measured 0.01x-0.7x of pi's own count across
+  local sessions, a floor of ~2k tokens even on a small toolset). Entry and branch *weights* stay a
+  pure chars/4 sum, labeled `~` — a branch's size must not include the per-session baseline.
+  Per-node cached in the panel's view model; gauge denominators from pi's model catalog
+  context-window field.
 - **Tree layout (panel):** indent-based tree (not graph) with collapse state in panel memory; forest mode lazy-loads file headers first, full parse on expand (50MB file must not block the UI thread — stream + incremental render).
 
 ## 6. Invariants & errors

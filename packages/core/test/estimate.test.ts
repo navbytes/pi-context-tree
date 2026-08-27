@@ -4,6 +4,7 @@ import {
 	band,
 	bandStartPercents,
 	compactionImminent,
+	contextTokens,
 	entryChars,
 	estimateContextTokens,
 	estimateEntryTokens,
@@ -182,5 +183,44 @@ describe("aggregateConsumers", () => {
 		const keys = aggregateConsumers(contextSlice(tree, leaf)).map((r) => r.key);
 		expect(keys).toContain("decision records");
 		expect(keys).toContain("crop stubs");
+	});
+});
+
+describe("contextTokens", () => {
+	it("falls back to the pure sum when no turn carries usage", () => {
+		const b = new SessionBuilder();
+		b.user(filler(400));
+		const leaf = b.assistant(filler(400));
+		const tree = SessionTree.fromEntries(b.build().entries);
+		expect(contextTokens(contextSlice(tree, leaf))).toBe(100 + 100);
+	});
+
+	it("anchors on the last real usage and estimates only what follows", () => {
+		const b = new SessionBuilder();
+		b.user(filler(400)); // 100 est — before the anchor, so absorbed by it
+		b.assistant(filler(400), { usage: { totalTokens: 9_000 } });
+		const leaf = b.user(filler(800)); // 200 est — after the anchor, so added
+		const tree = SessionTree.fromEntries(b.build().entries);
+		// the anchor covers the system prompt + tool schemas, which no entry holds
+		expect(contextTokens(contextSlice(tree, leaf))).toBe(9_000 + 200);
+	});
+
+	it("ignores usage pi would not trust (errored/aborted turns, all-zero)", () => {
+		const b = new SessionBuilder();
+		b.user(filler(400));
+		const leaf = b.assistant(filler(400), { usage: { totalTokens: 9_000 } });
+		const entries = b.build().entries;
+		const last = entries.at(-1) as { message: { stopReason: string } };
+		last.message.stopReason = "error";
+		const tree = SessionTree.fromEntries(entries);
+		expect(contextTokens(contextSlice(tree, leaf))).toBe(200);
+	});
+
+	it("keeps estimateContextTokens a pure sum — branch weight must exclude the baseline", () => {
+		const b = new SessionBuilder();
+		b.user(filler(400));
+		const leaf = b.assistant(filler(400), { usage: { totalTokens: 9_000 } });
+		const tree = SessionTree.fromEntries(b.build().entries);
+		expect(estimateContextTokens(contextSlice(tree, leaf))).toBe(200);
 	});
 });

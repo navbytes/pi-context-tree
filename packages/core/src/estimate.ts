@@ -5,7 +5,7 @@
  * IMAGE_CHARS mirrors pi's ESTIMATED_IMAGE_CHARS.
  */
 
-import type { AgentMessage, SessionEntry, UserContent } from "./types.ts";
+import type { AgentMessage, SessionEntry, Usage, UserContent } from "./types.ts";
 import { isMessageEntry } from "./types.ts";
 
 export const CHARS_PER_TOKEN = 4;
@@ -68,9 +68,51 @@ export function estimateEntryTokens(e: SessionEntry): number {
 	return Math.ceil(entryChars(e) / CHARS_PER_TOKEN);
 }
 
+/** Pure chars/4 sum — the *weight of some entries*, not the size of a context. */
 export function estimateContextTokens(slice: readonly SessionEntry[]): number {
 	let total = 0;
 	for (const e of slice) total += estimateEntryTokens(e);
+	return total;
+}
+
+/** Tokens pi actually charged for a turn (pi parity — compaction.js:86). */
+function turnTokens(u: Usage): number {
+	return u.totalTokens || u.input + u.output + u.cacheRead + u.cacheWrite;
+}
+
+/** The turn's real usage, or undefined if it carries none pi would trust. */
+function anchorUsage(e: SessionEntry | undefined): number | undefined {
+	if (!e || !isMessageEntry(e)) return undefined;
+	const m = e.message;
+	if (m.role !== "assistant" || !m.usage) return undefined;
+	if (m.stopReason === "aborted" || m.stopReason === "error") return undefined;
+	const tokens = turnTokens(m.usage);
+	return tokens > 0 ? tokens : undefined;
+}
+
+/**
+ * Size of the context at the end of `slice`. Anchors on the last assistant
+ * turn's real usage when there is one and chars/4-estimates only what follows,
+ * exactly as pi does (compaction.js:131).
+ *
+ * The anchor is not a refinement — it is the only way to see the system prompt
+ * and tool schemas, which are charged every turn and appear in no session
+ * entry. Measured across local sessions that floor is ~2k tokens even on a
+ * small toolset, so the pure sum reads 0.01x-0.7x of reality; with absolute
+ * bands (8k/32k/64k) that is a whole band low.
+ */
+export function contextTokens(slice: readonly SessionEntry[]): number {
+	let anchor = -1;
+	let total = 0;
+	for (let i = slice.length - 1; i >= 0; i--) {
+		const tokens = anchorUsage(slice[i]);
+		if (tokens !== undefined) {
+			total = tokens;
+			anchor = i;
+			break;
+		}
+	}
+	for (let i = anchor + 1; i < slice.length; i++) total += estimateEntryTokens(slice[i] as SessionEntry);
 	return total;
 }
 

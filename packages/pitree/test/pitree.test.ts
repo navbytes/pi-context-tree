@@ -1,4 +1,5 @@
-import { mkdirSync, mkdtempSync, statSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -83,5 +84,19 @@ describe("read-only guarantees", () => {
 		expect(input.readOnly).toBe(true);
 		expect(input.entries.length).toBeGreaterThan(0);
 		expect(input.project).toBe("tabwrangler");
+	});
+});
+
+// Regression: npm links the bin as node_modules/.bin/pitree, so process.argv[1]
+// ends with "pitree", not "cli.js". The old suffix guard made the CLI a silent
+// no-op for every installed user; import.meta.main is symlink-proof.
+describe("cli bin entry", () => {
+	it("runs when invoked through a symlink (npm bin shim)", () => {
+		const cli = join(import.meta.dirname, "../dist/cli.js");
+		if (!existsSync(cli)) return; // dist not built (unit-only run)
+		const link = join(mkdtempSync(join(tmpdir(), "pitree-bin-")), "pitree");
+		symlinkSync(cli, link);
+		const out = execFileSync(process.execPath, [link, "--help"], { encoding: "utf8" });
+		expect(out).toContain("usage: pitree");
 	});
 });

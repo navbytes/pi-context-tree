@@ -6,7 +6,27 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-_Nothing yet._
+### Fixed
+- **`pitree` did nothing when installed.** The CLI guarded its entry point with an
+  `argv[1].endsWith("cli.js")` check, but npm links the bin as a symlink at
+  `node_modules/.bin/pitree`, so `argv[1]` ends with `pitree` and `main()` never ran — a silent
+  exit 0 for every installed user since the package was first published. Now guarded with
+  `import.meta.main`, which is symlink-proof. (The usual `pathToFileURL(argv[1])` idiom would also
+  have failed here: `import.meta.url` is the realpath, `argv[1]` is not.)
+- **Context size was estimated far too low.** The gauge and panel summed chars/4 over session
+  entries, which cannot see the system prompt or the tool schemas — charged every turn, present in
+  no entry. Measured against pi's own count across local sessions the estimate ran 0.01x-0.7x of
+  reality (mean 0.24x), a floor of ~2k tokens even on a small toolset. Context size now anchors on
+  the last assistant turn's real `message.usage` and estimates only what follows, as pi does
+  (`compaction.js:131`); the same sessions now read 1.00x. This mattered more after 0.3.0 moved the
+  bands to absolute tokens (8k/32k/64k), where a 2k undercount can hold the gauge a whole band low.
+  Affected the standalone `pitree ui` (always estimating), the panel right after load or
+  compaction, and the ambient gauge before the first turn.
+
+### Changed
+- `@pi-context-tree/core` adds `contextTokens(slice)` for "how big is this context";
+  `estimateContextTokens(slice)` keeps its pure chars/4 meaning and is now only used for entry and
+  branch *weights*, where the per-session baseline must not be counted.
 
 ## [0.3.0] — 2026-08-27
 

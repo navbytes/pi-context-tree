@@ -21,7 +21,7 @@ import {
 	band,
 	compactionImminent,
 	contextSlice,
-	estimateContextTokens,
+	contextTokens,
 	fmtTokens,
 } from "@pi-context-tree/core";
 import { defaultTheme, type GaugeInput, renderGauge } from "@pi-context-tree/tui";
@@ -144,7 +144,7 @@ export function refreshAmbient(pi: PiLike, ctx: CtxLike): void {
 		pct = usage.percent;
 		estimated = false;
 	} else if (slice && window && window > 0) {
-		gaugeTokens = estimateContextTokens(slice);
+		gaugeTokens = contextTokens(slice);
 		pct = (gaugeTokens / window) * 100;
 	}
 
