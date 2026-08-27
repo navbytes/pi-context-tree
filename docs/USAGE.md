@@ -15,7 +15,7 @@ pi remove git:github.com/navbytes/pi-context-tree   # if already installed
 pi -e /path/to/pi-context-tree
 ```
 
-You'll know it's loaded when you see a **`CONTEXT …%` gauge bar above your prompt** and `⎇ trunk · ctx N%` in the footer. Commands available: `/branch` `/merge` `/crop` `/undo` `/panel` `/decisions` (and `Ctrl+Q`).
+You'll know it's loaded when you see a **`CONTEXT …%` gauge bar above your prompt** and `⎇ trunk · ctx N%` in the footer. Commands available: `/branch` `/merge` `/crop` `/undo` `/panel` `/decisions` `/gauge` (and `Ctrl+Q`).
 
 ## 2. The idea in 30 seconds
 
@@ -137,6 +137,14 @@ Reading the tree: `●` user · `○` assistant · `⚙` tool/MCP · `◆` decis
 - **Footer status** — `⎇ branch · ctx N% band`.
 - **Terminal title** — `project (branch) (pi)`, color hashed from the branch name.
 - **Red nudge** — a one-time gentle warning when context enters the red band, suggesting `/branch`, `/merge`, or `/crop`. It re-arms only once context has dropped a full band clear of red, so hovering the boundary during normal work will not nag you.
+- **`/gauge bar|border`** — where the gauge lives. `bar` (default) pins it above the prompt; `border` paints it into the input box's bottom border, which costs no vertical space:
+  ```
+  ─ 46k / 200k · 23.2% filling ▲ +24% (chrome.snapshot) ──────··········
+  ```
+  Both modes show the same thing — tokens, percent, band word, the `est` marker, the compaction
+  notice and the trend — so switching costs you no information. Your choice is saved in
+  `~/.pi/agent/pi-context-tree.json`. On a narrow terminal the border drops the label and keeps the
+  bar; in RPC/headless pi there is no editor to paint, so it falls back to the bar.
 - **Compaction guard** — a separate one-time warning as you approach pi's own auto-compaction point, which replaces source material with a lossy summary. A different problem from a degraded context: on a small window you can hit it while the gauge is still orange, and on a very large one you may never reach it. The gauge bar shows `· pi compacts soon` alongside it.
 - **`/compact` warning** — if you invoke pi's `/compact`, a one-time note explains why this tool prefers branch/merge/crop (it never blocks you).
 

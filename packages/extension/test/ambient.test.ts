@@ -1,12 +1,26 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { refreshAmbient, resetAmbient } from "../src/ambient.ts";
+import { setConfigPath, setGaugeMode } from "../src/config.ts";
 import { makeFake } from "./fake-pi.ts";
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ANSI is the point
 const STRIP = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 
+// every suite here points config at a temp dir — the developer's real
+// ~/.pi/agent/pi-context-tree.json must never decide whether tests pass
+const cfgDir = mkdtempSync(join(tmpdir(), "ctree-gauge-"));
+const cfg = join(cfgDir, "pi-context-tree.json");
+afterAll(() => rmSync(cfgDir, { recursive: true, force: true }));
+
 describe("refreshAmbient", () => {
-	beforeEach(resetAmbient); // clear the trend baseline between tests
+	beforeEach(() => {
+		resetAmbient(); // clear the trend baseline between tests
+		rmSync(cfg, { force: true });
+		setConfigPath(cfg); // absent file → the default "bar" mode
+	});
 
 	it("shows branch and banded percentage from pi usage", () => {
 		const w = makeFake();
@@ -173,5 +187,83 @@ describe("refreshAmbient", () => {
 		w.ctx.getContextUsage = () => ({ tokens: 80_000, contextWindow: 200_000, percent: 40 }); // real 40%
 		refreshAmbient(w.pi, w.ctx);
 		expect(STRIP(w.ui.widgets.get("ctree-gauge")?.lines?.[0] ?? "")).not.toContain("▲");
+	});
+});
+
+describe("gauge mode (F5.6)", () => {
+	const world = () => {
+		const w = makeFake();
+		w.session.user("hi");
+		w.ctx.getContextUsage = () => ({ tokens: 46_000, contextWindow: 200_000, percent: 23 });
+		return w;
+	};
+
+	beforeEach(() => {
+		resetAmbient();
+		rmSync(cfg, { force: true });
+		setConfigPath(cfg);
+	});
+
+	it("bar by default: widget above the editor, pi's own editor left alone", () => {
+		const w = world();
+		refreshAmbient(w.pi, w.ctx);
+		expect(w.ui.widgets.get("ctree-gauge")?.lines?.[0]).toContain("CONTEXT");
+		expect(w.ui.editorFactory).toBeUndefined();
+	});
+
+	it("border: widget cleared, editor installed, same reading", () => {
+		setGaugeMode("border");
+		const w = world();
+		refreshAmbient(w.pi, w.ctx);
+		expect(w.ui.widgets.get("ctree-gauge")?.lines).toBeUndefined();
+		expect(typeof w.ui.editorFactory).toBe("function");
+	});
+
+	it("border → bar: editor handed back, widget restored", () => {
+		setGaugeMode("border");
+		const w = world();
+		refreshAmbient(w.pi, w.ctx);
+		setGaugeMode("bar");
+		refreshAmbient(w.pi, w.ctx);
+		expect(w.ui.editorFactory).toBeUndefined();
+		expect(w.ui.widgets.get("ctree-gauge")?.lines?.[0]).toContain("CONTEXT");
+	});
+
+	it("border: repeat refreshes reuse the installed factory (no per-turn churn)", () => {
+		setGaugeMode("border");
+		const w = world();
+		refreshAmbient(w.pi, w.ctx);
+		const first = w.ui.editorFactory;
+		refreshAmbient(w.pi, w.ctx);
+		refreshAmbient(w.pi, w.ctx);
+		expect(w.ui.editorFactory).toBe(first);
+	});
+
+	it("border: re-installs after pi resets the editor without telling us", () => {
+		setGaugeMode("border");
+		const w = world();
+		refreshAmbient(w.pi, w.ctx);
+		w.ui.editorFactory = undefined; // interactive-mode resetExtensionUI()
+		refreshAmbient(w.pi, w.ctx);
+		expect(typeof w.ui.editorFactory).toBe("function");
+	});
+
+	it("falls back to the bar where the host has no editor seam (RPC/headless)", () => {
+		setGaugeMode("border");
+		const w = world();
+		Object.defineProperty(w.ui, "setEditorComponent", { value: undefined, configurable: true });
+		refreshAmbient(w.pi, w.ctx);
+		// a configured border mode must not mean no gauge at all
+		expect(w.ui.widgets.get("ctree-gauge")?.lines?.[0]).toContain("CONTEXT");
+	});
+
+	it("clears a stale border editor even if the mode flipped while it was installed", () => {
+		setGaugeMode("border");
+		const w = world();
+		refreshAmbient(w.pi, w.ctx);
+		resetAmbient(); // drops the module flag; pi still holds our factory
+		setGaugeMode("bar");
+		refreshAmbient(w.pi, w.ctx);
+		expect(w.ui.editorFactory).toBeUndefined();
 	});
 });
