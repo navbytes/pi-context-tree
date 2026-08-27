@@ -7,9 +7,14 @@ Thanks for your interest! This project is a [pi](https://github.com/earendil-wor
 ```sh
 npm install
 npm test       # builds core/tui/pitree dist, then vitest across all workspaces
-npm run check  # tsc --noEmit ×4 packages + biome
+npm run check  # builds dist, then tsc --noEmit ×4 packages + biome
 npm run fixtures  # regenerate committed fixtures (must stay byte-identical)
 ```
+
+**Use these scripts, not `npx vitest` / bare `tsc`.** Packages resolve each other
+through `dist` (`exports` in each `package.json`), so anything that skips the build
+step silently validates whatever was compiled last — a stale `dist` will happily
+report passes and failures that have nothing to do with your working tree.
 
 Run the extension against real pi from source:
 

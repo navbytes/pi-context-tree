@@ -62,7 +62,7 @@ You can already *split* and *navigate* context natively — but the moves that k
 | **`/crop`** | Stub fat tool/MCP results, or drop a whole Q&A turn — **append-only**, always recoverable. `--top` crops the biggest result inline; or review in the panel; or headless `--auto --apply`. |
 | **`/undo`** | One-key revert of the last mutation — re-open a squashed/discarded branch, restore a crop, or undo a `/branch`. **Append-only**: nothing is deleted. |
 | **`/panel` (`Ctrl+Q`)** | Full-screen TUI: the tree with per-node token costs, branch status colors, top context consumers, all decision records (`/decisions --export` to markdown), and an entry inspector. |
-| **Ambient health gauge** | A green→red bar above your prompt with a **`▲` trend + jump attribution** — `ctx 38% ▲ +24% (chrome.snapshot)` tells you *what* to crop. Honest while estimating (band + `~est`, never a fake-precise %). Plus a hashed title and a one-time red-band nudge. |
+| **Ambient health gauge** | A green→red bar above your prompt with a **`▲` trend + jump attribution** — `… 46k / 200k · 23.2% filling ▲ +24% (chrome.snapshot)` tells you *what* to crop. Honest while estimating (band + `~est`, never a fake-precise %). Plus a hashed title and a one-time red-band nudge. |
 | **`pitree`** | A standalone, **read-only** forest CLI across all your pi projects, with dangling-branch detection. |
 
 ## Demo
@@ -206,7 +206,7 @@ A full-screen overlay with five keyboard-driven views — **tree** (every entry 
 
 ### Ambient UI (outside the panel)
 
-A **context-health gauge bar pinned above the prompt** (`CONTEXT ▓▓░ … N% band`, green→red, band ticks at 8k/32k/64k tokens, drawn as a share of your window). It carries a **`▲` trend** when context is filling fast and **attributes jumps** — `ctx 38% ▲ +24% (chrome.snapshot)` names *what* just bloated the window, right where you'll see it. While pi is still estimating (right after a session loads) it stays honest: the band word + a coarse `~est`, never a fake-precise percent. Plus a footer status `⎇ branch · ctx N% band`, a terminal title color-hashed per branch, a one-time nudge when context enters the red band (with hysteresis, so hovering the boundary does not re-fire it), a separate warning before pi's own auto-compaction is about to swap your source material for a summary, and a philosophy warning on `/compact`.
+A **context-health gauge bar pinned above the prompt** (`CONTEXT ▓▓░ … N% band`, green→red, band ticks at 8k/32k/64k tokens, drawn as a share of your window). It carries a **`▲` trend** when context is filling fast and **attributes jumps** — `… 46k / 200k · 23.2% filling ▲ +24% (chrome.snapshot)` names *what* just bloated the window, right where you'll see it. The footer stays compact (`⎇ branch · ctx N% band`); the trend is rendered once, on the bar. While pi is still estimating (right after a session loads) it stays honest: the band word + a coarse `~est`, never a fake-precise percent. Plus a footer status `⎇ branch · ctx N% band`, a terminal title color-hashed per branch, a one-time nudge when context enters the red band (with hysteresis, so hovering the boundary does not re-fire it), a separate warning before pi's own auto-compaction is about to swap your source material for a summary, and a philosophy warning on `/compact`.
 
 ### `pitree` — the standalone forest CLI
 

@@ -144,9 +144,10 @@ describe("refreshAmbient", () => {
 		refreshAmbient(w.pi, w.ctx);
 		w.ctx.getContextUsage = () => ({ tokens: 38_000, contextWindow: 200_000, percent: 19 });
 		refreshAmbient(w.pi, w.ctx);
-		const status = w.ui.statuses.get("ctree") ?? "";
-		expect(status).toContain("▲");
-		expect(status).not.toContain("+"); // Δ4 → trend only, no jump attribution
+		const line = STRIP(w.ui.widgets.get("ctree-gauge")?.lines?.[0] ?? "");
+		expect(line).toContain("▲");
+		expect(line).not.toContain("+"); // Δ4 → trend only, no jump attribution
+		expect(w.ui.statuses.get("ctree") ?? "").not.toContain("▲"); // rendered once, on the bar
 	});
 
 	it("attributes a jump to the consumer that grew the most", () => {
@@ -157,9 +158,10 @@ describe("refreshAmbient", () => {
 		w.session.toolResult("chrome.snapshot", "x".repeat(240_000)); // a fat result lands
 		w.ctx.getContextUsage = () => ({ tokens: 80_000, contextWindow: 200_000, percent: 40 });
 		refreshAmbient(w.pi, w.ctx);
-		const status = w.ui.statuses.get("ctree") ?? "";
-		expect(status).toContain("▲ +30%"); // 40 − 10
-		expect(status).toContain("(chrome.snapshot)");
+		const line = STRIP(w.ui.widgets.get("ctree-gauge")?.lines?.[0] ?? "");
+		expect(line).toContain("▲ +30%"); // 40 − 10
+		expect(line).toContain("(chrome.snapshot)");
+		expect(w.ui.statuses.get("ctree") ?? "").not.toContain("("); // no duplicate attribution in the footer
 	});
 
 	it("does not read the estimate→real calibration as a jump", () => {
@@ -170,6 +172,6 @@ describe("refreshAmbient", () => {
 		refreshAmbient(w.pi, w.ctx);
 		w.ctx.getContextUsage = () => ({ tokens: 80_000, contextWindow: 200_000, percent: 40 }); // real 40%
 		refreshAmbient(w.pi, w.ctx);
-		expect(w.ui.statuses.get("ctree") ?? "").not.toContain("▲");
+		expect(STRIP(w.ui.widgets.get("ctree-gauge")?.lines?.[0] ?? "")).not.toContain("▲");
 	});
 });
