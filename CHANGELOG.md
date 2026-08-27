@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- **`/gauge bar|border`** (F5.6) — the context gauge can render into pi's input box border instead of
+  a widget pinned above the prompt, buying back a line of vertical space:
+  ```
+  ─ 46k / 200k · 23.2% filling ▲ +24% (chrome.snapshot) ──────··········
+  ```
+  Both modes render the same `gaugeLabel()` — tokens, percent, band word, `est` marker, compaction
+  notice — plus the trend, so switching loses nothing. Narrow terminals drop the label and keep the
+  bar; pi's `─── ↓ N more ` scroll indicator is preserved; RPC/headless falls back to the bar. The
+  choice persists in `~/.pi/agent/pi-context-tree.json`.
+
 ### Changed
 - **The context gauge bands on absolute tokens instead of share-of-window.** `<8k` low · `8k–32k`
   healthy · `32k–64k` filling · `≥64k` red. Share-of-window was a poor proxy for what it claimed to

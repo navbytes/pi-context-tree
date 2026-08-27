@@ -24,14 +24,19 @@ import {
 	estimateContextTokens,
 	fmtTokens,
 } from "@pi-context-tree/core";
-import { defaultTheme, renderGauge } from "@pi-context-tree/tui";
+import { defaultTheme, type GaugeInput, renderGauge } from "@pi-context-tree/tui";
 import { type CtxLike, type PiLike, projectName } from "./adapter.ts";
+import { createBorderGaugeFactory, setBorderGauge } from "./border-editor.ts";
+import { getGaugeMode } from "./config.ts";
 import { rememberCtx } from "./ctx-cache.ts";
 import { deriveState, type SessionState } from "./state.ts";
 
 // One-shot notifies (F5.3): `active` fires once, `rearm` clears the latch.
 // rearm is deliberately stricter than !active — sitting on a boundary is normal
 // work and must not re-fire a nudge the spec calls one-time.
+let borderFactory: ReturnType<typeof createBorderGaugeFactory> | undefined;
+let borderInstalled = false;
+
 const latched = new Set<string>();
 function nudgeOnce(ctx: CtxLike, key: string, active: boolean, rearm: boolean, message: string): void {
 	if (active && !latched.has(key)) {
@@ -55,6 +60,7 @@ export function resetAmbient(): void {
 	lastEstimated = true;
 	lastConsumers = new Map();
 	latched.clear();
+	borderInstalled = false; // pi re-creates the editor across sessions
 }
 
 /**
@@ -160,13 +166,33 @@ export function refreshAmbient(pi: PiLike, ctx: CtxLike): void {
 	ctx.ui.setStatus("ctree", `⎇ ${branch} · ${gaugeText}`);
 	ctx.ui.setTitle(`${projectName()}${branch !== "trunk" ? ` (${branch})` : ""} (pi)`);
 
-	// G1: colored context-health gauge bar above the prompt (green→red, band-ticked)
+	// G1: the context-health gauge (green→red). Two display modes, one reading —
+	// `bar` pins a widget above the editor, `border` paints the same label and
+	// progress into the input box's bottom border (F5.6). The trend rides with the
+	// gauge either way; the footer above stays compact.
+	const gauge: GaugeInput = { tokens: gaugeTokens, window, estimated, barWidth: 28 };
+	if (getGaugeMode() === "border" && ctx.ui.setEditorComponent) {
+		setBorderGauge(gauge, trend);
+		ctx.ui.setWidget?.("ctree-gauge", undefined);
+		borderFactory ??= createBorderGaugeFactory();
+		// pi resets custom editors on its own (interactive-mode resetExtensionUI) —
+		// trust getEditorComponent where the host has it, fall back to the flag.
+		const live = ctx.ui.getEditorComponent ? ctx.ui.getEditorComponent() === borderFactory : borderInstalled;
+		if (!live) ctx.ui.setEditorComponent(borderFactory);
+		borderInstalled = true;
+		return;
+	}
+	// bar mode — also the fallback where the host has no setEditorComponent (RPC/headless)
+	if (borderInstalled || ctx.ui.getEditorComponent?.() === borderFactory) {
+		ctx.ui.setEditorComponent?.(undefined);
+		borderInstalled = false;
+	}
 	if (ctx.ui.setWidget) {
 		if (window && window > 0) {
-			const bar = renderGauge({ tokens: gaugeTokens, window, estimated, barWidth: 28 }, defaultTheme);
+			const line = `${renderGauge(gauge, defaultTheme)}${trend}`;
 			// Factory form: pi wraps string[] content in Text(line, paddingX=1), indenting the bar
 			// off the editor border. Our own Text(paddingX=0) bypasses that (interactive-mode.js).
-			ctx.ui.setWidget("ctree-gauge", (_tui, _theme) => new Text(`${bar}${trend}`, 0, 0), {
+			ctx.ui.setWidget("ctree-gauge", (_tui, _theme) => new Text(line, 0, 0), {
 				placement: "aboveEditor",
 			});
 		} else {

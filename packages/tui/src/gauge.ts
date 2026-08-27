@@ -14,15 +14,36 @@ export interface GaugeInput {
 	barWidth?: number;
 }
 
-export function renderGauge(input: GaugeInput, theme: CtreeTheme): string {
-	const barWidth = input.barWidth ?? 30;
-	if (input.tokens === null) {
-		return `${theme.dim("CONTEXT")} ${theme.dim("░".repeat(barWidth))} ${theme.dim("estimating… (awaiting next turn)")}`;
-	}
+/**
+ * The text half of the gauge — token counts, percent, band word, the honest
+ * `est` marker, and the compaction notice. Shared by the bar and the border
+ * renderer so the two display modes cannot drift apart.
+ */
+export function gaugeLabel(input: GaugeInput, theme: CtreeTheme): string {
+	if (input.tokens === null) return theme.dim("estimating… (awaiting next turn)");
 	// tokens known but no window (standalone pitree): show the estimate — there
 	// is no "next turn" coming, and "estimating…" would be a permanent lie
 	if (!input.window || input.window <= 0) {
-		return `${theme.dim("CONTEXT")} ${theme.dim("░".repeat(barWidth))} ~${fmtTokens(input.tokens)} est · ${theme.dim("window unknown")}`;
+		return `~${fmtTokens(input.tokens)} est · ${theme.dim("window unknown")}`;
+	}
+	const b: Band = band(input.tokens);
+	const pct = (input.tokens / input.window) * 100;
+	// Honest estimate: while estimating (chars/4, pre-first-turn), show the band word
+	// + a coarse ~Nk est — never a fake-precise percent. Exact % only on pi's real count.
+	const main =
+		input.estimated === false
+			? `${fmtTokens(input.tokens)} / ${fmtTokens(input.window)} · ${theme.band[b](`${pct.toFixed(1)}% ${b}`)}`
+			: `~${fmtTokens(input.tokens)} est · ${theme.band[b](b)}`;
+	// The container failure is separate from the quality band: pi is about to
+	// replace source material with a summary, whatever color the bar is.
+	return compactionImminent(input.tokens, input.window) ? `${main} ${theme.band.red("· pi compacts soon")}` : main;
+}
+
+export function renderGauge(input: GaugeInput, theme: CtreeTheme): string {
+	const barWidth = input.barWidth ?? 30;
+	const label = gaugeLabel(input, theme);
+	if (input.tokens === null || !input.window || input.window <= 0) {
+		return `${theme.dim("CONTEXT")} ${theme.dim("░".repeat(barWidth))} ${label}`;
 	}
 	const pct = (input.tokens / input.window) * 100;
 	const b: Band = band(input.tokens);
@@ -35,14 +56,5 @@ export function renderGauge(input: GaugeInput, theme: CtreeTheme): string {
 		const ch = i < fill ? "█" : ticks.has(i) ? "┊" : "░";
 		bar += i < fill ? theme.band[b](ch) : theme.dim(ch);
 	}
-	// Honest estimate: while estimating (chars/4, pre-first-turn), show the band word
-	// + a coarse ~Nk est — never a fake-precise percent. Exact % only on pi's real count.
-	const label =
-		input.estimated === false
-			? `${fmtTokens(input.tokens)} / ${fmtTokens(input.window)} · ${theme.band[b](`${pct.toFixed(1)}% ${b}`)}`
-			: `~${fmtTokens(input.tokens)} est · ${theme.band[b](b)}`;
-	// The container failure is separate from the quality band: pi is about to
-	// replace source material with a summary, whatever color the bar is.
-	const compact = compactionImminent(input.tokens, input.window) ? ` ${theme.band.red("· pi compacts soon")}` : "";
-	return `${theme.dim("CONTEXT")} ${bar} ${label}${compact}`;
+	return `${theme.dim("CONTEXT")} ${bar} ${label}`;
 }

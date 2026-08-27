@@ -11,8 +11,9 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { CTREE_DECISION, type CtreeDecisionDetails, textOfContent } from "@pi-context-tree/core";
 import { decisionCardLines } from "@pi-context-tree/tui";
 import type { Deps, PiLike } from "./adapter.ts";
-import { registerAmbient } from "./ambient.ts";
+import { refreshAmbient, registerAmbient } from "./ambient.ts";
 import { registerBranch } from "./branch.ts";
+import { type GaugeMode, getGaugeMode, setGaugeMode } from "./config.ts";
 import { registerCrop } from "./crop-cmd.ts";
 import { realDraft } from "./draft.ts";
 import { registerMerge } from "./merge.ts";
@@ -30,6 +31,35 @@ export default function piContextTree(api: ExtensionAPI): void {
 	registerPanel(pi, deps);
 	registerUndo(pi);
 	registerAmbient(pi);
+
+	// F5.6: where the gauge lives — a widget above the editor, or the input border
+	pi.registerCommand("gauge", {
+		description: "pi-context-tree: context gauge display — /gauge bar|border",
+		handler: async (args, ctx) => {
+			const arg = args.trim().toLowerCase();
+			if (!arg) {
+				ctx.ui.notify(`gauge mode: ${getGaugeMode()} — /gauge bar|border`, "info");
+				return;
+			}
+			if (arg !== "bar" && arg !== "border") {
+				ctx.ui.notify(`unknown gauge mode "${arg}" — use /gauge bar|border`, "warning");
+				return;
+			}
+			const mode: GaugeMode = arg;
+			try {
+				setGaugeMode(mode);
+			} catch (e) {
+				ctx.ui.notify(`could not save gauge mode: ${e instanceof Error ? e.message : String(e)}`, "error");
+				return;
+			}
+			ctx.ui.notify(`gauge mode: ${mode}`, "info");
+			refreshAmbient(pi, ctx);
+		},
+		getArgumentCompletions: () => [
+			{ value: "bar", label: "bar — gauge widget above the editor" },
+			{ value: "border", label: "border — the input box border is the gauge" },
+		],
+	});
 
 	// ◆ decision records render as mockup-style cards in the chat (F7 polish)
 	pi.registerMessageRenderer?.<CtreeDecisionDetails>(CTREE_DECISION, (message, options) => ({

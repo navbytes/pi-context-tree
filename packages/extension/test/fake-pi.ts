@@ -76,6 +76,14 @@ export class FakeUi {
 		this.widgets.set(key, { lines, placement: options?.placement });
 	}
 
+	editorFactory: unknown;
+	setEditorComponent(factory: unknown): void {
+		this.editorFactory = factory;
+	}
+	getEditorComponent(): unknown {
+		return this.editorFactory;
+	}
+
 	notify(msg: string, type?: "info" | "warning" | "error"): void {
 		this.notifications.push({ msg, type });
 	}

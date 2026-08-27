@@ -24,9 +24,10 @@ export type UiLike = Pick<
 	ExtensionContext["ui"],
 	"notify" | "select" | "confirm" | "input" | "editor" | "setStatus" | "setTitle"
 > &
-	// custom: TUI-only (absent in RPC/headless); setWidget: pi ≥0.79, and pi's own
-	// overloads already cover both string[] lines and a WidgetFactory (pi ≥0.84)
-	Partial<Pick<ExtensionContext["ui"], "custom" | "setWidget">>;
+	// custom/setEditorComponent: TUI-only (no-ops in RPC/headless); setWidget: pi ≥0.79,
+	// and pi's own overloads already cover both string[] lines and a WidgetFactory (pi ≥0.84).
+	// getEditorComponent (pi ≥0.79) is how we notice pi resetting our editor underneath us.
+	Partial<Pick<ExtensionContext["ui"], "custom" | "setWidget" | "setEditorComponent" | "getEditorComponent">>;
 
 export type SessionManagerLike = Pick<ExtensionContext["sessionManager"], "getEntries" | "getLeafId">;
 

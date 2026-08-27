@@ -158,6 +158,9 @@
   @keyframes tin{from{transform:translateY(6px);opacity:0}}
 
   /* legend */
+  .gmode{margin-top:10px}
+  .gmodelbl{color:var(--dim);font-size:11px;margin-bottom:4px}
+  .gmodepre{font:inherit;white-space:pre;overflow-x:auto}
   .legend{width:min(1100px,100%);display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;
        color:var(--dim);font-size:11.5px;line-height:1.7}
   .legend .box{border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:var(--term)}
@@ -346,6 +349,16 @@ function totals(){
   // container guard: an independent signal, not a band
   const compacting = t > WINDOW - COMPACTION_RESERVE;
   return {t,pct,state,compacting};
+}
+// mirrors borderGaugeLine() in packages/tui/src/border-gauge.ts — gauge mode 'border'
+function borderGaugeLine(width){
+  const {t,pct,state,compacting}=totals();
+  const label = fmt(t)+' / '+fmt(WINDOW)+' \u00b7 '+pct.toFixed(1)+'% '+state+(compacting?' \u00b7 pi compacts soon':'');
+  const head = '\u2500 '+label+' ';
+  const runway = width - head.length;
+  if(runway < 10) return '\u2500'.repeat(width);   // too narrow for both: bar alone
+  const fill = Math.round(pct/100*runway);
+  return head + '\u2500'.repeat(fill) + '\u00b7'.repeat(runway-fill);
 }
 // mirrors bandStartPercents(): band boundaries drawn as a share of THIS window
 function bandStarts(){
@@ -611,6 +624,8 @@ function renderAmbient(){
     (compacting?'<div class="notify">⚠ pi will auto-compact soon, replacing source material with a lossy summary — /merge or /crop keeps the source (F5.5)</div>':'')+
     '</div>'+
     '<div class="promptbox" style="border-color:'+bcol+'"><span style="color:var(--green)">'+promptTxt+'</span><span class="cursor"></span></div>'+
+    '<div class="gmode"><div class="gmodelbl">/gauge border \u2014 the same reading, painted into the input border (F5.6)</div>'+
+    '<pre class="gmodepre" style="color:'+bcol+'">'+borderGaugeLine(62)+'</pre></div>'+
     '<div class="pbfoot">~/repos/'+PROJECT+' <span style="color:var(--txt)">●</span> '+PROJECT+(S.branch?' <span style="color:hsl('+hashHue(S.branch)+',60%,65%)">('+S.branch+')</span>':' <span style="color:var(--dim)">(trunk)</span>')+
     '<br>↑245 ↓1.2k R1.8M W42k $3.86 <span class="pct" style="background:'+bcol+'">'+pct.toFixed(1)+'%</span>/'+fmt(WINDOW)+' (auto)'+
     '<span class="right">claude-'+S.model.replace('.','-')+' <span style="color:var(--txt)">●</span> high</span>'+
