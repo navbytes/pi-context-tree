@@ -1,7 +1,7 @@
 {
 	"name": "pi-context-tree",
 	"type": "module",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"description": "Git-style /branch /merge /crop workflow + context panel for pi sessions \u2014 keep your agent's context small, fresh, and relevant.",
 	"keywords": [
 		"pi-package",
@@ -50,7 +50,7 @@
 		"fixtures": "node fixtures/generate.ts"
 	},
 	"dependencies": {
-		"@pi-context-tree/extension": "0.3.0",
+		"@pi-context-tree/extension": "0.3.1",
 		"@types/node": "^25.9.3",
 		"typescript": "^6.0.3"
 	},
