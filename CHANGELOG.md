@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.3.0] — 2026-08-27
+
 ### Added
 - **`/gauge bar|border`** (F5.6) — the context gauge can render into pi's input box border instead of
   a widget pinned above the prompt, buying back a line of vertical space:
@@ -122,7 +126,8 @@ First public release — a git-style branch/merge/crop workflow plus a full-scre
 - **CI** — lint/types/unit per push, integration against the pinned pi (keyless), and a non-blocking `pi@latest` drift lane.
 - **Release** — pushing a `vX.Y.Z` tag runs the gate and cuts a GitHub Release from this changelog.
 
-[Unreleased]: https://github.com/navbytes/pi-context-tree/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/navbytes/pi-context-tree/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/navbytes/pi-context-tree/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/navbytes/pi-context-tree/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/navbytes/pi-context-tree/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/navbytes/pi-context-tree/releases/tag/v0.1.0
