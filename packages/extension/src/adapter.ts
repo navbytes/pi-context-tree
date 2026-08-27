@@ -14,6 +14,10 @@ export interface ModelLike {
 	[k: string]: unknown;
 }
 
+/** Widget content factory (pi ≥0.84): receives (tui, theme), returns a renderable component.
+ * Types stay structural — pi-coding-agent nests its own pi-tui copy. */
+export type WidgetFactory = (tui: unknown, theme: unknown) => { render(width: number): string[] };
+
 export interface UiLike {
 	notify(message: string, type?: "info" | "warning" | "error"): void;
 	select(title: string, options: string[], opts?: unknown): Promise<string | undefined>;
@@ -23,8 +27,9 @@ export interface UiLike {
 	setStatus(key: string, text: string | undefined): void;
 	setTitle(title: string): void;
 	custom?<T>(factory: unknown, options?: unknown): Promise<T>;
-	/** Pin a widget (string lines) above/below the prompt — used for the context-health bar. */
-	setWidget?(key: string, content: string[] | undefined, options?: { placement?: string }): void;
+	/** Pin a widget above/below the prompt — used for the context-health bar. string[] gets wrapped by
+	 * pi in Text(line, paddingX=1); a factory returns our own component and bypasses that wrapper. */
+	setWidget?(key: string, content: string[] | WidgetFactory | undefined, options?: { placement?: string }): void;
 }
 
 export interface ModelRegistryLike {

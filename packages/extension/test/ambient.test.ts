@@ -40,6 +40,7 @@ describe("refreshAmbient", () => {
 		const line = STRIP(widget?.lines?.[0] ?? "");
 		expect(line).toContain("CONTEXT"); // the panel gauge, pinned above the prompt
 		expect(line).toContain("15.0% filling"); // band-labeled (color verified live; chalk is off in vitest)
+		expect(line).not.toMatch(/^\s/); // factory form bypasses pi's Text(line, paddingX=1) wrapper
 	});
 
 	it("estimates honestly in the bar (≈tokens + est, no fake percent)", () => {
@@ -62,6 +63,22 @@ describe("refreshAmbient", () => {
 		model.contextWindow = undefined;
 		refreshAmbient(w.pi, w.ctx);
 		expect(w.ui.statuses.get("ctree")).toBe("⎇ trunk · ctx —");
+		model.contextWindow = saved;
+	});
+
+	it("clears the bar when the window goes unknown (no stale number over `ctx —`)", () => {
+		const w = makeFake();
+		w.session.user("hi");
+		w.ctx.getContextUsage = () => ({ tokens: 30_000, contextWindow: 200_000, percent: 15 });
+		refreshAmbient(w.pi, w.ctx);
+		expect(w.ui.widgets.get("ctree-gauge")?.lines?.[0]).toBeTruthy();
+
+		w.ctx.getContextUsage = () => undefined;
+		const model = w.ctx.model as { contextWindow?: number };
+		const saved = model.contextWindow;
+		model.contextWindow = undefined;
+		refreshAmbient(w.pi, w.ctx);
+		expect(w.ui.widgets.get("ctree-gauge")?.lines).toBeUndefined();
 		model.contextWindow = saved;
 	});
 
