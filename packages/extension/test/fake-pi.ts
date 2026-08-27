@@ -5,7 +5,7 @@
  */
 
 import type { AgentMessage, SessionEntry } from "@pi-context-tree/core";
-import type { CmdCtxLike, CtxLike, ModelLike, PiLike, UiLike } from "../src/adapter.ts";
+import type { CmdCtxLike, CtxLike, ModelLike, PiLike, UiLike, WidgetFactory } from "../src/adapter.ts";
 
 export class FakeSession {
 	entries: SessionEntry[] = [];
@@ -70,8 +70,10 @@ export class FakeUi implements UiLike {
 	/** unset by default — tests opt in to a TUI-capable ui by assigning (UiLike.custom is optional) */
 	custom?: <T>(factory: unknown, options?: unknown) => Promise<T> = undefined;
 	widgets = new Map<string, { lines: string[] | undefined; placement?: string }>();
-	setWidget(key: string, content: string[] | undefined, options?: { placement?: string }): void {
-		this.widgets.set(key, { lines: content, placement: options?.placement });
+	setWidget(key: string, content: string[] | WidgetFactory | undefined, options?: { placement?: string }): void {
+		// factory form: call with dummies and render, so tests keep inspecting `lines`
+		const lines = typeof content === "function" ? content({}, {}).render(200) : content;
+		this.widgets.set(key, { lines, placement: options?.placement });
 	}
 
 	notify(msg: string, type?: "info" | "warning" | "error"): void {

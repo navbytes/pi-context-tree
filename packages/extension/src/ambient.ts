@@ -14,7 +14,8 @@
  * ours, no conflict.
  */
 
-import { aggregateConsumers, band, contextSlice, estimateContextTokens } from "@pi-context-tree/core";
+import { Text } from "@earendil-works/pi-tui";
+import { aggregateConsumers, BAND_THRESHOLDS, band, contextSlice, estimateContextTokens } from "@pi-context-tree/core";
 import { defaultTheme, renderGauge } from "@pi-context-tree/tui";
 import { type CtxLike, type PiLike, projectName } from "./adapter.ts";
 import { rememberCtx } from "./ctx-cache.ts";
@@ -69,7 +70,10 @@ function trendMarker(pct: number, estimated: boolean, consumers: Map<string, num
 function nudgeOnRed(ctx: CtxLike, b: string): void {
 	if (b === "red" && !warnedRed) {
 		warnedRed = true;
-		ctx.ui.notify("context crossed 40% of the window — consider /merge, /crop or /branch (F5.3)", "warning");
+		ctx.ui.notify(
+			`context crossed ${BAND_THRESHOLDS.red}% of the window — consider /merge, /crop or /branch (F5.3)`,
+			"warning",
+		);
 	}
 	if (b !== "red") warnedRed = false;
 }
@@ -121,9 +125,18 @@ export function refreshAmbient(pi: PiLike, ctx: CtxLike): void {
 	ctx.ui.setTitle(`${projectName()}${branch !== "trunk" ? ` (${branch})` : ""} (pi)`);
 
 	// G1: colored context-health gauge bar above the prompt (green→red, band-ticked)
-	if (ctx.ui.setWidget && window && window > 0) {
-		const bar = renderGauge({ tokens: gaugeTokens, window, estimated, barWidth: 28 }, defaultTheme);
-		ctx.ui.setWidget("ctree-gauge", [` ${bar}${trend}`], { placement: "aboveEditor" });
+	if (ctx.ui.setWidget) {
+		if (window && window > 0) {
+			const bar = renderGauge({ tokens: gaugeTokens, window, estimated, barWidth: 28 }, defaultTheme);
+			// Factory form: pi wraps string[] content in Text(line, paddingX=1), indenting the bar
+			// off the editor border. Our own Text(paddingX=0) bypasses that (interactive-mode.js).
+			ctx.ui.setWidget("ctree-gauge", (_tui, _theme) => new Text(`${bar}${trend}`, 0, 0), {
+				placement: "aboveEditor",
+			});
+		} else {
+			// window unknown — the footer says `ctx —`; a stale bar would contradict it
+			ctx.ui.setWidget("ctree-gauge", undefined);
+		}
 	}
 }
 
