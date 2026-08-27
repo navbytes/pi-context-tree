@@ -15,13 +15,31 @@
  */
 
 import { Text } from "@earendil-works/pi-tui";
-import { aggregateConsumers, BAND_THRESHOLDS, band, contextSlice, estimateContextTokens } from "@pi-context-tree/core";
+import {
+	aggregateConsumers,
+	type Band,
+	band,
+	compactionImminent,
+	contextSlice,
+	estimateContextTokens,
+	fmtTokens,
+} from "@pi-context-tree/core";
 import { defaultTheme, renderGauge } from "@pi-context-tree/tui";
 import { type CtxLike, type PiLike, projectName } from "./adapter.ts";
 import { rememberCtx } from "./ctx-cache.ts";
 import { deriveState, type SessionState } from "./state.ts";
 
-let warnedRed = false;
+// One-shot notifies (F5.3): `active` fires once, `rearm` clears the latch.
+// rearm is deliberately stricter than !active — sitting on a boundary is normal
+// work and must not re-fire a nudge the spec calls one-time.
+const latched = new Set<string>();
+function nudgeOnce(ctx: CtxLike, key: string, active: boolean, rearm: boolean, message: string): void {
+	if (active && !latched.has(key)) {
+		latched.add(key);
+		ctx.ui.notify(message, "warning");
+	}
+	if (rearm) latched.delete(key);
+}
 
 // Trend/attribution baseline (F5.2+): compared like-for-like turn over turn, reset
 // per session so a new session never inherits the previous one's trend.
@@ -36,6 +54,7 @@ export function resetAmbient(): void {
 	lastPct = null;
 	lastEstimated = true;
 	lastConsumers = new Map();
+	latched.clear();
 }
 
 /**
@@ -67,15 +86,29 @@ function trendMarker(pct: number, estimated: boolean, consumers: Map<string, num
 	return out;
 }
 
-function nudgeOnRed(ctx: CtxLike, b: string): void {
-	if (b === "red" && !warnedRed) {
-		warnedRed = true;
-		ctx.ui.notify(
-			`context crossed ${BAND_THRESHOLDS.red}% of the window — consider /merge, /crop or /branch (F5.3)`,
-			"warning",
-		);
-	}
-	if (b !== "red") warnedRed = false;
+/**
+ * Two nudges for two failures: the red band is a quality signal (the model is
+ * degrading), the compaction guard is a container one (pi is about to swap
+ * source material for a summary). They fire independently — a small window can
+ * hit compaction while still green, a large one can go red with room to spare.
+ */
+function nudge(ctx: CtxLike, b: Band, tokens: number | null, window: number | undefined): void {
+	const size = tokens === null ? "" : ` (~${fmtTokens(tokens)} tokens)`;
+	nudgeOnce(
+		ctx,
+		"red",
+		b === "red",
+		b === "low" || b === "healthy", // a full band clear of red
+		`context entered the red band${size} — consider /merge, /crop or /branch (F5.3)`,
+	);
+	if (tokens === null) return;
+	nudgeOnce(
+		ctx,
+		"compaction",
+		compactionImminent(tokens, window),
+		!compactionImminent(tokens, window, 2), // a full reserve clear of it
+		"pi will auto-compact soon, replacing source material with a lossy summary — /merge or /crop keeps the source (F5.4)",
+	);
 }
 
 export function refreshAmbient(pi: PiLike, ctx: CtxLike): void {
@@ -113,10 +146,10 @@ export function refreshAmbient(pi: PiLike, ctx: CtxLike): void {
 
 	let gaugeText = "ctx —";
 	if (pct !== null) {
-		const b = band(pct);
+		const b = band(gaugeTokens ?? 0);
 		// honest: no fake-precise percent while estimating — band word + est marker
 		gaugeText = estimated ? `ctx ${b} · est${trend}` : `ctx ${pct.toFixed(1)}% ${b}${trend}`;
-		nudgeOnRed(ctx, b);
+		nudge(ctx, b, gaugeTokens, window);
 	} else if (usage) {
 		gaugeText = "ctx est…";
 	}

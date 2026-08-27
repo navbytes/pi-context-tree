@@ -1,9 +1,10 @@
 /**
- * Context gauge (F5.2): fill bar with band ticks at 5/15/40% plus a label.
+ * Context gauge (F5.2): fill bar with band ticks plus a label. Ticks sit where
+ * the band color changes for this window (percent rule vs absolute-token cap).
  * `tokens === null` renders the post-compaction "estimating" state.
  */
 
-import { BAND_THRESHOLDS, type Band, band, fmtTokens } from "@pi-context-tree/core";
+import { type Band, band, bandStartPercents, compactionImminent, fmtTokens } from "@pi-context-tree/core";
 import type { CtreeTheme } from "./theme.ts";
 
 export interface GaugeInput {
@@ -24,12 +25,10 @@ export function renderGauge(input: GaugeInput, theme: CtreeTheme): string {
 		return `${theme.dim("CONTEXT")} ${theme.dim("░".repeat(barWidth))} ~${fmtTokens(input.tokens)} est · ${theme.dim("window unknown")}`;
 	}
 	const pct = (input.tokens / input.window) * 100;
-	const b: Band = band(pct);
+	const b: Band = band(input.tokens);
 	const fill = Math.max(0, Math.min(barWidth, Math.round((pct / 100) * barWidth)));
 	const ticks = new Set(
-		[BAND_THRESHOLDS.healthy, BAND_THRESHOLDS.filling, BAND_THRESHOLDS.red].map((p) =>
-			Math.min(barWidth - 1, Math.round((p / 100) * barWidth)),
-		),
+		Object.values(bandStartPercents(input.window)).map((p) => Math.min(barWidth - 1, Math.round((p / 100) * barWidth))),
 	);
 	let bar = "";
 	for (let i = 0; i < barWidth; i++) {
@@ -42,5 +41,8 @@ export function renderGauge(input: GaugeInput, theme: CtreeTheme): string {
 		input.estimated === false
 			? `${fmtTokens(input.tokens)} / ${fmtTokens(input.window)} · ${theme.band[b](`${pct.toFixed(1)}% ${b}`)}`
 			: `~${fmtTokens(input.tokens)} est · ${theme.band[b](b)}`;
-	return `${theme.dim("CONTEXT")} ${bar} ${label}`;
+	// The container failure is separate from the quality band: pi is about to
+	// replace source material with a summary, whatever color the bar is.
+	const compact = compactionImminent(input.tokens, input.window) ? ` ${theme.band.red("· pi compacts soon")}` : "";
+	return `${theme.dim("CONTEXT")} ${bar} ${label}${compact}`;
 }

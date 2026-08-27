@@ -121,7 +121,7 @@ No leaf movement: the fork entry itself is the label point; subsequent turns are
 `ctx.ui.custom((tui, theme, keybindings, done) => new TreePanel(vm, theme, keybindings, done), {overlay:true, overlayOptions:{anchor:"center", width:"100%", height:"100%"}})` — exact full-screen `overlayOptions` are the M2 spike's deliverable. Mutations happen **after** `done(action)` resolves, back in the command handler (overlay returns an action descriptor; handler re-validates tree state then executes via SessionPort) — this respects pi's "mutate from command context" model and the spec's re-validate-on-apply invariant (TRD §6).
 
 ### Footer gauge + title (always on)
-`setFooter` component reads `getContextUsage()` per render: `percent==null` → render `est…` state (post-compaction unknown is a real state, handle it); else band color at 5/15/40. `setTitle(`${project} ⎇ ${branch}`)` on every fork/close/session_start event.
+`setFooter` component reads `getContextUsage()` per render: `percent==null` → render `est…` state (post-compaction unknown is a real state, handle it); else band color from the absolute token count (8k/32k/64k) — see `band()` in `estimate.ts`. Ticks come from `bandStartPercents(window)`; the compaction guard is `compactionImminent()`, separate from the band by design. `setTitle(`${project} ⎇ ${branch}`)` on every fork/close/session_start event.
 
 ---
 

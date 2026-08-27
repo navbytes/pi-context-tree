@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { aggregateConsumers } from "../src/consumers.ts";
 import {
 	band,
+	bandStartPercents,
+	compactionImminent,
 	entryChars,
 	estimateContextTokens,
 	estimateEntryTokens,
@@ -87,15 +89,58 @@ describe("estimateContextTokens", () => {
 });
 
 describe("band", () => {
-	it("maps percent to spec bands (5/15/40)", () => {
+	it("maps absolute tokens to the spec bands (8k/32k/64k)", () => {
 		expect(band(0)).toBe("low");
-		expect(band(4.9)).toBe("low");
-		expect(band(5)).toBe("healthy");
-		expect(band(14.9)).toBe("healthy");
-		expect(band(15)).toBe("filling");
-		expect(band(40)).toBe("filling");
-		expect(band(40.1)).toBe("red");
-		expect(band(120)).toBe("red");
+		expect(band(7_999)).toBe("low");
+		expect(band(8_000)).toBe("healthy"); // LOCA-bench: every model at its peak here
+		expect(band(31_999)).toBe("healthy");
+		expect(band(32_000)).toBe("filling"); // the spread between models opens
+		expect(band(63_999)).toBe("filling");
+		expect(band(64_000)).toBe("red"); // last point before the 64K–96K cliff
+		expect(band(500_000)).toBe("red");
+	});
+
+	it("does not care how big the window is", () => {
+		// the whole point: 100k tokens is 50% of a 200k window and 10% of a 1M one,
+		// and the model is equally degraded either way
+		expect(band(100_000)).toBe("red");
+	});
+
+	it("reports where each band starts as a share of the window", () => {
+		expect(bandStartPercents(200_000)).toEqual({ healthy: 4, filling: 16, red: 32 });
+		const big = bandStartPercents(1_000_000);
+		expect(big.red).toBeCloseTo(6.4);
+		expect(big.healthy).toBeLessThan(big.filling);
+		expect(big.filling).toBeLessThan(big.red);
+	});
+
+	it("returns zeroes rather than Infinity when the window is unknown", () => {
+		expect(bandStartPercents(0)).toEqual({ healthy: 0, filling: 0, red: 0 });
+	});
+});
+
+describe("compactionImminent", () => {
+	it("fires inside pi's reserve, not before", () => {
+		expect(compactionImminent(183_616, 200_000)).toBe(false); // exactly window - reserve
+		expect(compactionImminent(183_617, 200_000)).toBe(true);
+	});
+
+	it("is independent of the quality band — a small window hits it while still green", () => {
+		// 20k tokens on a 32k window: still "healthy" for quality, but pi is already
+		// past its 16k reserve and about to summarize the session away
+		expect(band(20_000)).toBe("healthy");
+		expect(compactionImminent(20_000, 32_000)).toBe(true);
+	});
+
+	it("widens by whole reserves so a warning re-arms only on real headroom", () => {
+		expect(compactionImminent(170_000, 200_000)).toBe(false);
+		expect(compactionImminent(170_000, 200_000, 2)).toBe(true); // still not clear of it
+		expect(compactionImminent(160_000, 200_000, 2)).toBe(false);
+	});
+
+	it("says no when the window is unknown", () => {
+		expect(compactionImminent(999_999, undefined)).toBe(false);
+		expect(compactionImminent(999_999, 0)).toBe(false);
 	});
 });
 
