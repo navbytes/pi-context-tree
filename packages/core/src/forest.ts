@@ -7,9 +7,9 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { extractForks, type ForkInfo } from "./ctree.ts";
-import { estimateContextTokens } from "./estimate.ts";
+import { contextTokens } from "./estimate.ts";
 import { parseSessionFile, readSessionHeader } from "./jsonl.ts";
-import { contextSlice, SessionTree } from "./tree.ts";
+import { SessionTree } from "./tree.ts";
 import type { SessionHeader } from "./types.ts";
 
 export interface ForkSummary {
@@ -67,7 +67,7 @@ export async function summarizeSession(path: string): Promise<SessionSummary> {
 		name,
 		entryCount: parsed.entries.length,
 		lastTimestamp: last?.timestamp,
-		leafTokens: leafId ? estimateContextTokens(contextSlice(tree, leafId)) : 0,
+		leafTokens: leafId ? contextTokens(tree, leafId) : 0,
 		forks: forks.map((f) => ({
 			entryId: f.entryId,
 			name: f.data.name,

@@ -51,8 +51,9 @@ export async function main(argv: string[]): Promise<number> {
 	return 0;
 }
 
-const invokedDirectly = process.argv[1]?.endsWith("cli.js") || process.argv[1]?.endsWith("cli.ts");
-if (invokedDirectly) {
+// import.meta.main is true only for the entry module, and unlike an argv[1]
+// suffix check it survives npm's symlinked bin shim (node_modules/.bin/pitree).
+if (import.meta.main) {
 	main(process.argv.slice(2)).then(
 		(code) => process.exit(code),
 		(err) => {

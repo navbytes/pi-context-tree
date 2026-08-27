@@ -5,8 +5,9 @@
  * IMAGE_CHARS mirrors pi's ESTIMATED_IMAGE_CHARS.
  */
 
-import type { AgentMessage, SessionEntry, UserContent } from "./types.ts";
-import { isMessageEntry } from "./types.ts";
+import { contextSlice, type SessionTree } from "./tree.ts";
+import type { AgentMessage, SessionEntry, Usage, UserContent } from "./types.ts";
+import { isCompactionEntry, isMessageEntry } from "./types.ts";
 
 export const CHARS_PER_TOKEN = 4;
 export const IMAGE_CHARS = 4800;
@@ -68,9 +69,76 @@ export function estimateEntryTokens(e: SessionEntry): number {
 	return Math.ceil(entryChars(e) / CHARS_PER_TOKEN);
 }
 
+/** Pure chars/4 sum — the *weight of some entries*, not the size of a context. */
 export function estimateContextTokens(slice: readonly SessionEntry[]): number {
 	let total = 0;
 	for (const e of slice) total += estimateEntryTokens(e);
+	return total;
+}
+
+/** Tokens pi actually charged for a turn (pi parity — compaction.js:86). */
+function turnTokens(u: Usage): number {
+	return u.totalTokens || u.input + u.output + u.cacheRead + u.cacheWrite;
+}
+
+/** The turn's real usage, or undefined if it carries none pi would trust. */
+function anchorUsage(e: SessionEntry | undefined): number | undefined {
+	if (!e || !isMessageEntry(e)) return undefined;
+	const m = e.message;
+	if (m.role !== "assistant" || !m.usage) return undefined;
+	if (m.stopReason === "aborted" || m.stopReason === "error") return undefined;
+	const tokens = turnTokens(m.usage);
+	return tokens > 0 ? tokens : undefined;
+}
+
+/**
+ * Size of the context at `leafId`. Anchors on the last assistant turn's real
+ * usage when there is a trustworthy one and chars/4-estimates only what
+ * follows, exactly as pi does (compaction.js:131).
+ *
+ * The anchor is not a refinement — it is the only way to see the system prompt
+ * and tool schemas, which are charged every turn and appear in no session
+ * entry. Measured across local sessions that floor is ~2k tokens even on a
+ * small toolset, so the pure sum reads 0.01x-0.7x of reality; with absolute
+ * bands (8k/32k/64k) that is a whole band low.
+ *
+ * Takes the tree rather than a slice because trust depends on position:
+ * compaction keeps a tail of older messages, so a kept assistant turn can carry
+ * usage describing the very context compaction just discarded. pi refuses that
+ * number outright (agent-session.js getContextUsage returns tokens: null); here
+ * the eligible turns are exactly the compaction entry's descendants.
+ */
+export function contextTokens(tree: SessionTree, leafId: string): number {
+	const slice = contextSlice(tree, leafId);
+	const path = tree.pathFromRoot(leafId);
+	let floor = 0;
+	for (let i = path.length - 1; i >= 0; i--) {
+		const entry = path[i];
+		if (entry && isCompactionEntry(entry)) {
+			floor = i + 1;
+			break;
+		}
+	}
+	const trustworthy = new Set(path.slice(floor).map((e) => e.id));
+
+	let anchor = -1;
+	let total = 0;
+	for (let i = slice.length - 1; i >= 0; i--) {
+		const entry = slice[i];
+		if (!entry || !trustworthy.has(entry.id)) continue;
+		const tokens = anchorUsage(entry);
+		if (tokens !== undefined) {
+			total = tokens;
+			anchor = i;
+			break;
+		}
+	}
+	// no trustworthy anchor (fresh session, or nothing has answered since the
+	// last compaction) — chars/4 alone, which is what the `est` label promises
+	for (let i = anchor + 1; i < slice.length; i++) {
+		const entry = slice[i];
+		if (entry) total += estimateEntryTokens(entry);
+	}
 	return total;
 }
 

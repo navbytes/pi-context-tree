@@ -4,7 +4,15 @@
  * current leaf; `at(id)` moves the leaf pointer (= branching).
  */
 
-import type { AgentMessage, CtreeCloseStatus, SessionEntry, SessionHeader, TextContent, ToolCall } from "./types.ts";
+import type {
+	AgentMessage,
+	CtreeCloseStatus,
+	SessionEntry,
+	SessionHeader,
+	TextContent,
+	ToolCall,
+	Usage,
+} from "./types.ts";
 import { CTREE_CLOSE, CTREE_CROP, CTREE_DECISION, CTREE_FORK } from "./types.ts";
 
 const BASE_TIME = Date.parse("2026-06-12T00:00:00.000Z");
@@ -67,7 +75,7 @@ export class SessionBuilder {
 
 	assistant(
 		text: string,
-		opts: { model?: string; provider?: string; toolCalls?: ToolCall[]; id?: string } = {},
+		opts: { model?: string; provider?: string; toolCalls?: ToolCall[]; id?: string; usage?: Partial<Usage> } = {},
 	): string {
 		const content: (TextContent | ToolCall)[] = [{ type: "text", text }];
 		for (const tc of opts.toolCalls ?? []) content.push(tc);
@@ -79,7 +87,7 @@ export class SessionBuilder {
 				model: opts.model ?? "opus-4.8",
 				// pi's footer sums message.usage.input across ALL assistant entries without
 				// guards — sessions missing usage crash the real TUI (found by the PTY walk).
-				usage: zeroUsage(),
+				usage: { ...zeroUsage(), ...opts.usage },
 				stopReason: opts.toolCalls?.length ? "toolUse" : "stop",
 			},
 			opts.id,
