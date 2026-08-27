@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.3.1] — 2026-08-27
+
 ### Fixed
 - **`pitree` did nothing when installed.** The CLI guarded its entry point with an
   `argv[1].endsWith("cli.js")` check, but npm links the bin as a symlink at
@@ -22,9 +26,15 @@ All notable changes to this project are documented here. The format is based on
   bands to absolute tokens (8k/32k/64k), where a 2k undercount can hold the gauge a whole band low.
   Affected the standalone `pitree ui` (always estimating), the panel right after load or
   compaction, and the ambient gauge before the first turn.
+- **The anchor refuses usage recorded before the latest compaction.** Compaction keeps a tail of
+  older messages, so a *kept* assistant turn carries usage describing the context compaction just
+  discarded — anchoring on it read 150,100 tokens for a context of ~200, and it would have done so
+  at exactly the moment the fallback path is used. Eligible turns are the compaction entry's
+  descendants, matching pi's own refusal (`agent-session.js` `getContextUsage` returns
+  `tokens: null` when nothing has answered since the boundary).
 
 ### Changed
-- `@pi-context-tree/core` adds `contextTokens(slice)` for "how big is this context";
+- `@pi-context-tree/core` adds `contextTokens(tree, leafId)` for "how big is this context";
   `estimateContextTokens(slice)` keeps its pure chars/4 meaning and is now only used for entry and
   branch *weights*, where the per-session baseline must not be counted.
 
