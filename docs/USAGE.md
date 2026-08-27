@@ -133,7 +133,7 @@ Reading the tree: `●` user · `○` assistant · `⚙` tool/MCP · `◆` decis
 ## 6. The ambient signals (no panel needed)
 
 - **Gauge bar above the prompt** — `CONTEXT ▓▓▓░ … N% band`, green→red, band ticks where the color actually changes. The bands are **absolute token counts**, because that is what model quality tracks: `<8k` low · `8k–32k` healthy · `32k–64k` filling · `≥64k` red. A bigger window does not make you healthier, it just moves those marks left — red starts at 32% of a 200k window and 6.4% of a 1M one. Your at-a-glance context health.
-- **Trend + jump attribution** — a `▲` appears when context is filling fast, and a big jump is attributed to its cause: `ctx 38% ▲ +24% (chrome.snapshot)` tells you *what* to crop without opening the panel.
+- **Trend + jump attribution** — a `▲` appears on the gauge bar when context is filling fast, and a big jump is attributed to its cause: `… 46k / 200k · 23.2% filling ▲ +24% (chrome.snapshot)` tells you *what* to crop without opening the panel. It appears on the bar only — the footer stays a compact `ctx N% band`.
 - **Footer status** — `⎇ branch · ctx N% band`.
 - **Terminal title** — `project (branch) (pi)`, color hashed from the branch name.
 - **Red nudge** — a one-time gentle warning when context enters the red band, suggesting `/branch`, `/merge`, or `/crop`. It re-arms only once context has dropped a full band clear of red, so hovering the boundary during normal work will not nag you.
