@@ -39,8 +39,8 @@ export async function reviewRecord(
 		let action: ReviewAction | undefined;
 		try {
 			action = await ctx.ui.custom<ReviewAction>(
-				(tui: unknown, _theme: unknown, _keybindings: unknown, done: (a: ReviewAction) => void) => {
-					const rows = (tui as { terminal?: { rows?: number } } | undefined)?.terminal?.rows;
+				(tui, _theme, _keybindings, done) => {
+					const rows = tui?.terminal?.rows;
 					const maxBody = Math.max(6, (rows ?? 34) - REVIEW_CHROME_ROWS);
 					return new SummaryReview({
 						branchName,

@@ -1,93 +1,53 @@
 /**
  * Structural slice of pi's extension API — the ONLY pi-coupled surface
- * (TRD §1: session-adapter). Commands code against these interfaces; tests
- * provide fakes; src/index.ts binds the real ExtensionAPI (verified 0.79.1).
+ * (TRD §1: session-adapter). Commands code against these types; tests provide
+ * fakes; src/index.ts binds the real ExtensionAPI (verified 0.84.3).
+ *
+ * The slice is derived from pi's own exported types with Pick<>, so it can't
+ * silently drift from the real API: if pi renames or reshapes a member we use,
+ * this file fails to compile instead of failing at runtime. Members stay
+ * `Partial` where pi marks them optional or where we tolerate their absence.
  */
 
 import { basename } from "node:path";
+import type { Model } from "@earendil-works/pi-ai";
+import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { SessionEntry } from "@pi-context-tree/core";
 
-export interface ModelLike {
-	id: string;
-	provider: string;
-	contextWindow?: number;
-	[k: string]: unknown;
-}
+export type ModelLike = Model<any>;
 
 /** Widget content factory (pi ≥0.84): receives (tui, theme), returns a renderable component.
  * Types stay structural — pi-coding-agent nests its own pi-tui copy. */
 export type WidgetFactory = (tui: unknown, theme: unknown) => { render(width: number): string[] };
 
-export interface UiLike {
-	notify(message: string, type?: "info" | "warning" | "error"): void;
-	select(title: string, options: string[], opts?: unknown): Promise<string | undefined>;
-	confirm(title: string, message: string): Promise<boolean>;
-	input(title: string, placeholder?: string): Promise<string | undefined>;
-	editor(title: string, prefill?: string): Promise<string | undefined>;
-	setStatus(key: string, text: string | undefined): void;
-	setTitle(title: string): void;
-	custom?<T>(factory: unknown, options?: unknown): Promise<T>;
-	/** Pin a widget above/below the prompt — used for the context-health bar. string[] gets wrapped by
-	 * pi in Text(line, paddingX=1); a factory returns our own component and bypasses that wrapper. */
-	setWidget?(key: string, content: string[] | WidgetFactory | undefined, options?: { placement?: string }): void;
-}
+export type UiLike = Pick<
+	ExtensionContext["ui"],
+	"notify" | "select" | "confirm" | "input" | "editor" | "setStatus" | "setTitle"
+> &
+	// custom: TUI-only (absent in RPC/headless); setWidget: pi ≥0.79, and pi's own
+	// overloads already cover both string[] lines and a WidgetFactory (pi ≥0.84)
+	Partial<Pick<ExtensionContext["ui"], "custom" | "setWidget">>;
 
-export interface ModelRegistryLike {
-	find(provider: string, modelId: string): ModelLike | undefined;
-	getAll?(): ModelLike[];
-	getApiKeyAndHeaders(
-		model: ModelLike,
-	): Promise<{ ok: boolean; apiKey?: string; headers?: Record<string, string>; error?: string }>;
-}
+export type SessionManagerLike = Pick<ExtensionContext["sessionManager"], "getEntries" | "getLeafId">;
 
-export interface CtxLike {
-	ui: UiLike;
-	sessionManager: { getEntries(): SessionEntry[]; getLeafId?(): string | null };
-	model?: ModelLike;
-	modelRegistry: ModelRegistryLike;
-	getContextUsage?(): { tokens: number | null; contextWindow: number; percent: number | null } | undefined;
-}
+export type ModelRegistryLike = Pick<ExtensionContext["modelRegistry"], "find" | "complete"> &
+	Partial<Pick<ExtensionContext["modelRegistry"], "getAll">>;
+
+export type CtxLike = Pick<ExtensionContext, "model"> &
+	Partial<Pick<ExtensionContext, "getContextUsage">> & {
+		ui: UiLike;
+		sessionManager: SessionManagerLike;
+		modelRegistry: ModelRegistryLike;
+	};
 
 /** Command-capable context (pi's ExtensionCommandContext). */
-export interface CmdCtxLike extends CtxLike {
-	waitForIdle(): Promise<void>;
-	navigateTree(targetId: string, options?: { summarize?: boolean; label?: string }): Promise<{ cancelled: boolean }>;
-}
+export type CmdCtxLike = CtxLike & Pick<ExtensionCommandContext, "waitForIdle" | "navigateTree">;
 
-export interface PiLike {
-	registerCommand(
-		name: string,
-		options: {
-			description?: string;
-			handler: (args: string, ctx: CmdCtxLike) => Promise<void> | void;
-			// pi-tui's AutocompleteItem requires BOTH value and label — a missing label crashes
-			// the TUI autocomplete (undefined.endsWith). Always include label.
-			getArgumentCompletions?: (prefix: string) => { value: string; label: string }[] | null;
-		},
-	): void;
-	registerShortcut?(
-		keyId: string,
-		options: { description?: string; handler: (ctx: CtxLike) => Promise<void> | void },
-	): void;
-	on?(event: string, handler: (event: unknown, ctx: CtxLike) => unknown): void;
-	sendMessage(
-		message: { customType: string; content: string; display: boolean; details?: unknown },
-		options?: { triggerTurn?: boolean; deliverAs?: "steer" | "followUp" | "nextTurn" },
-	): void;
-	appendEntry(customType: string, data?: unknown): void;
-	setLabel(entryId: string, label: string | undefined): void;
-	setModel(model: ModelLike): Promise<boolean>;
-	getSessionName?(): string | undefined;
-	/** pretty rendering for custom_message entries in the chat (pi ≥0.79) */
-	registerMessageRenderer?<T = unknown>(
-		customType: string,
-		renderer: (
-			message: { customType: string; content: string; details?: T; timestamp?: number },
-			options: { expanded: boolean },
-			theme: unknown,
-		) => { render(width: number): string[] } | undefined,
-	): void;
-}
+// NB: pi-tui's AutocompleteItem requires BOTH value and label — a missing label
+// crashes the TUI autocomplete (undefined.endsWith). Always include label.
+export type PiLike = Pick<ExtensionAPI, "registerCommand" | "sendMessage" | "appendEntry" | "setLabel" | "setModel"> &
+	// registerMessageRenderer is pi ≥0.79; the rest are optional in pi's own API
+	Partial<Pick<ExtensionAPI, "registerShortcut" | "on" | "getSessionName" | "registerMessageRenderer">>;
 
 /** Drafting dependency — real implementation calls the branch model via pi-ai. */
 export type DraftFn = (ctx: CmdCtxLike, modelRef: string | undefined, system: string, user: string) => Promise<string>;
@@ -98,15 +58,14 @@ export interface Deps {
 
 // -- helpers -----------------------------------------------------------------
 
+// pi's SessionEntry and core's are structurally the same shape; core owns its
+// own copy so the package stays pi-free (TRD §1), so this boundary casts once.
 export function entriesOf(ctx: CtxLike): SessionEntry[] {
-	return ctx.sessionManager.getEntries();
+	return ctx.sessionManager.getEntries() as SessionEntry[];
 }
 
 export function leafIdOf(ctx: CtxLike): string | null {
-	const viaApi = ctx.sessionManager.getLeafId?.();
-	if (viaApi !== undefined) return viaApi;
-	const entries = entriesOf(ctx);
-	return entries.length ? (entries[entries.length - 1]?.id ?? null) : null;
+	return ctx.sessionManager.getLeafId();
 }
 
 export function lastEntryId(ctx: CtxLike): string | null {

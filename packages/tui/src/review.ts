@@ -78,6 +78,9 @@ export class SummaryReview {
 		this.theme = opts.theme ?? defaultTheme;
 	}
 
+	/** pi-tui Component requires it; this component re-renders from the vm each frame */
+	invalidate(): void {}
+
 	handleInput(data: string): void {
 		if (matchesKey(data, "enter")) {
 			this.opts.onAction({ type: "accept" });
