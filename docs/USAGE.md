@@ -21,7 +21,7 @@ You'll know it's loaded when you see a **`CONTEXT …%` gauge bar above your pro
 
 Treat your pi session like a **git repo**: context entries are commits, the main line is `master`, and side-quests are branches.
 
-- Keep the trunk **small, fresh, relevant** (5–15% of the window).
+- Keep the trunk **small, fresh, relevant** (under ~32k tokens — an absolute figure, not a share of the window).
 - Explore on a **branch**; fold only the *conclusion* back as a **decision record** — the noisy turns stay behind.
 - Never `/compact` (it replaces source material with a lossy summary).
 - When a single tool result or a whole exchange bloats context, **crop** it (the original stays recoverable).
@@ -132,11 +132,12 @@ Reading the tree: `●` user · `○` assistant · `⚙` tool/MCP · `◆` decis
 
 ## 6. The ambient signals (no panel needed)
 
-- **Gauge bar above the prompt** — `CONTEXT ▓▓▓░ … N% band`, green→red, ticks at 5/15/40% (the bands: `<5%` low · `5–15%` healthy · `15–40%` filling · `>40%` red). Your at-a-glance context health.
+- **Gauge bar above the prompt** — `CONTEXT ▓▓▓░ … N% band`, green→red, band ticks where the color actually changes. The bands are **absolute token counts**, because that is what model quality tracks: `<8k` low · `8k–32k` healthy · `32k–64k` filling · `≥64k` red. A bigger window does not make you healthier, it just moves those marks left — red starts at 32% of a 200k window and 6.4% of a 1M one. Your at-a-glance context health.
 - **Trend + jump attribution** — a `▲` appears when context is filling fast, and a big jump is attributed to its cause: `ctx 38% ▲ +24% (chrome.snapshot)` tells you *what* to crop without opening the panel.
 - **Footer status** — `⎇ branch · ctx N% band`.
 - **Terminal title** — `project (branch) (pi)`, color hashed from the branch name.
-- **Red nudge** — a one-time gentle warning when context crosses 40%, suggesting `/branch`, `/merge`, or `/crop`.
+- **Red nudge** — a one-time gentle warning when context enters the red band, suggesting `/branch`, `/merge`, or `/crop`. It re-arms only once context has dropped a full band clear of red, so hovering the boundary during normal work will not nag you.
+- **Compaction guard** — a separate one-time warning as you approach pi's own auto-compaction point, which replaces source material with a lossy summary. A different problem from a degraded context: on a small window you can hit it while the gauge is still orange, and on a very large one you may never reach it. The gauge bar shows `· pi compacts soon` alongside it.
 - **`/compact` warning** — if you invoke pi's `/compact`, a one-time note explains why this tool prefers branch/merge/crop (it never blocks you).
 
 **Honest while warming up:** pi reports zero usage right after a session loads, so until the first fresh turn the gauge shows the band word + a coarse `~Nk est` rather than a fake-precise percent — it switches to pi's exact number once a turn lands.

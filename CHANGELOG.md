@@ -6,7 +6,31 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-_Nothing yet._
+### Changed
+- **The context gauge bands on absolute tokens instead of share-of-window.** `<8k` low · `8k–32k`
+  healthy · `32k–64k` filling · `≥64k` red. Share-of-window was a poor proxy for what it claimed to
+  measure: 10% of a 1M window is 100k tokens (deep into degradation) while 10% of a 32k window is
+  3.2k (fine) — the same reading meaning opposite things. Percent is still printed as a label; it no
+  longer decides anything.
+- Thresholds are read off [LOCA-bench](https://arxiv.org/abs/2602.07962) (Feb 2026), which measures
+  agent success against growing context rather than needle retrieval: 8k is where every model is
+  still at peak, 32k is where the between-model spread opens, and 64k is the last point before the
+  sharp 64k–96k drop. The previous NoLiMa-derived figures are 2025 retrieval numbers and markedly
+  stricter than what 2026 agentic models actually do; spec Part 0 keeps NoLiMa for direction.
+- Gauge ticks now sit where the band color actually changes for the current window.
+
+### Added
+- **Compaction guard** (F5.5) — an independent warning when context enters pi's auto-compaction
+  reserve (`contextWindow - reserveTokens`, default 16384). This is the *container* failure, not the
+  quality one, and the two are deliberately separate signals: a 32k-window session can hit it while
+  still healthy, and a 1M-window session can sit red for hours without approaching it. The gauge bar
+  shows `· pi compacts soon`.
+
+### Fixed
+- The red-band nudge re-armed on every dip out of red, so hovering the boundary during normal work
+  re-fired what F5.3 specifies as a one-time nudge. It now re-arms only after context drops a full
+  band clear of red, and resets between sessions.
+- The nudge reported a fixed `40%` threshold; it now reports the measured size.
 
 ## [0.2.0] — 2026-08-26
 

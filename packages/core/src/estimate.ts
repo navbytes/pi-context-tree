@@ -1,6 +1,7 @@
 /**
  * Token estimation (chars/4, pi parity — compaction.ts:250-290) and gauge
- * banding (5/15/40, spec F5.2). Estimates are labeled `~` at the UI layer;
+ * banding on absolute tokens (8k/32k/64k, spec F5.2) plus a compaction guard.
+ * Estimates are labeled `~` at the UI layer;
  * IMAGE_CHARS mirrors pi's ESTIMATED_IMAGE_CHARS.
  */
 
@@ -74,18 +75,89 @@ export function estimateContextTokens(slice: readonly SessionEntry[]): number {
 }
 
 // ---------------------------------------------------------------------------
-// Gauge bands (F5.2): low <5 · healthy 5–15 · filling 15–40 · red >40
+// Gauge bands (F5.2) and the compaction guard.
+//
+// Two DIFFERENT failures, deliberately kept as two signals rather than one
+// color:
+//
+//   quality   — attention degrades as context grows. Absolute, and roughly
+//               independent of how big the window happens to be.
+//   container — the window fills and pi compacts, replacing source material
+//               with a lossy summary. Absolute headroom, set by pi.
+//
+// Share-of-window is a poor proxy for either. It drifts as windows grow (10%
+// of 1M is 100k tokens, deep into degradation; 10% of 32k is 3.2k, fine — same
+// reading, opposite realities), and it mistimes compaction badly (40% of 200k
+// warns 100k tokens early). So percent decides nothing here; it stays a label
+// the UI prints.
+//
+// Every number below is sourced. The band ceilings come from LOCA-bench
+// (arXiv 2602.07962, Feb 2026), which measures *agent* success as environment
+// context grows — the workload this tool actually serves, unlike needle
+// retrieval. Claude-4.5-Opus scores 96% at 8K, 84% at 32K, 34% at 128K and
+// 14.7% at 256K; the spread between models opens at 32K and the paper puts the
+// sharp drop at 64K-96K. So: 8K is peak, 32K is where it starts costing, 64K is
+// the last point before the cliff. The reserve is pi's documented default
+// (compaction.js:76 / settings-manager.js:560).
+//
+// Superseded here: NoLiMa (ICML 2025) put effective lengths at <=8k and the
+// half-baseline point at 32k. Those are retrieval-without-literal-match numbers
+// from early 2025 and are markedly stricter than what 2026 agentic models
+// actually do; spec Part 0 still cites it for the direction, not the figures.
+//
+// Which failure counts as "act now" is still this tool's opinion (spec Part 0);
+// the thresholds themselves are not invented.
 // ---------------------------------------------------------------------------
 
 export type Band = "low" | "healthy" | "filling" | "red";
 
-export const BAND_THRESHOLDS = { healthy: 5, filling: 15, red: 40 } as const;
+/** Absolute context tokens at which each band begins (LOCA-bench 2026). */
+export const BAND_TOKENS = { healthy: 8_000, filling: 32_000, red: 64_000 } as const;
 
-export function band(percent: number): Band {
-	if (percent < BAND_THRESHOLDS.healthy) return "low";
-	if (percent < BAND_THRESHOLDS.filling) return "healthy";
-	if (percent <= BAND_THRESHOLDS.red) return "filling";
-	return "red";
+/** Ascending severity. */
+const BAND_STEPS = [
+	{ band: "healthy", tokens: BAND_TOKENS.healthy },
+	{ band: "filling", tokens: BAND_TOKENS.filling },
+	{ band: "red", tokens: BAND_TOKENS.red },
+] as const;
+
+/** Context-quality band for an absolute token count. */
+export function band(tokens: number): Band {
+	let out: Band = "low";
+	for (const step of BAND_STEPS) {
+		if (tokens >= step.tokens) out = step.band;
+	}
+	return out;
+}
+
+/**
+ * Where each band begins for `window`, as a percent of it — gauge ticks read
+ * this so the marks land where the color actually changes. Naturally ordered
+ * (8k < 32k < 64k); entries past the end of the window exceed 100 and the caller
+ * clamps them to the bar.
+ */
+export function bandStartPercents(window: number): Record<"healthy" | "filling" | "red", number> {
+	const out = {} as Record<"healthy" | "filling" | "red", number>;
+	for (const step of BAND_STEPS) out[step.band] = window > 0 ? (step.tokens / window) * 100 : 0;
+	return out;
+}
+
+/**
+ * Tokens pi keeps in hand before it auto-compacts — its default
+ * `compaction.reserveTokens`. pi does not expose the live value to extensions
+ * (ContextUsage is only tokens/contextWindow/percent), so a user who overrides
+ * it in pi's settings will see this guard fire at a slightly different point.
+ */
+export const COMPACTION_RESERVE = 16_384;
+
+/**
+ * True once pi's auto-compaction is close enough to be worth acting on.
+ * `slack` widens the guard in whole reserves — callers use `slack: 2` to ask
+ * "are we clear of it", so a one-time warning re-arms only after real headroom
+ * comes back rather than on every wobble across the line.
+ */
+export function compactionImminent(tokens: number, window: number | undefined, slack = 1): boolean {
+	return !!window && window > 0 && tokens > window - COMPACTION_RESERVE * slack;
 }
 
 /** 950 → "950" · 19400 → "19.4k" · 200000 → "200k" */

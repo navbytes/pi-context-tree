@@ -4,6 +4,7 @@
 **Owner:** Naveen
 **Target platform:** pi (the earendil-works coding agent)
 **Status:** Ready for implementation
+**v0.4 changes (band calibration, 2026-08-27):** the gauge stops banding on share-of-window and bands on **absolute tokens** instead — 8k/32k/64k, read off LOCA-bench (Feb 2026), the agentic long-context benchmark now cited in Part 0 (F5.2). Share-of-window is a poor proxy for either failure this tool cares about: it drifts as windows grow (10% of 1M is 100k tokens, deep into degradation; 10% of 32k is 3.2k, fine) and it mistimes compaction badly (40% of a 200k window warns 100k tokens early). The two failures are now two signals: the **band color** tracks quality, and a separate **compaction guard** (F5.5) tracks pi's own auto-compaction reserve. Percent survives as a printed label and decides nothing. F5.3's nudge gains hysteresis: it re-arms only after context drops a full band clear of red.
 **v0.3 changes (research pass, 2026-06-12):** pinned pi's canonical repo to `earendil-works/pi-mono` (badlogic URLs redirect); F2.5 now targets the verified `BranchSummaryEntry` summarize-on-leave mechanism; decision records gain an **Assumptions** field (Forky-inspired) and a ~1–2k-token size guideline (Anthropic's distilled-summary envelope); fork labels documented as doubling as named checkpoints (F1.6); added Part 3 (prior art & evidence); the 5–15% band is explicitly an opinionated heuristic.
 **v0.2 changes:** Rich TUI panel is now the primary management surface (launchable from inside pi); adopted `/branch` `/merge` `/crop` vocabulary; added discard-merge, interactive crop, title-bar branding, context gauge with health band, context-consumer stats; web dashboard demoted to v2.
 
@@ -13,14 +14,14 @@
 
 This tool exists because attention is a fixed budget: softmax forces all attention weights to sum to 1, so irrelevant tokens dilute attention and too many relevant tokens flatten it, with positional effects burying the middle of long contexts. Practical consequences this tool is built around:
 
-- Keep the working context **small, fresh, relevant** — target band roughly **5–15% of the model's context window**.
+- Keep the working context **small, fresh, relevant** — target roughly **under 32k tokens**, measured absolutely rather than as a share of the window. A big window buys room, not quality.
 - **Never replace source material with lossy auto-summaries** (no `/compact`-style trunk rewriting). The only summarization this tool performs is branch→decision-record, and it is always **human-confirmed** before entering the trunk.
 - The session is a **git repo metaphor**: trunk = master, side work = branches, and master only receives clean, reviewed "commits" (decision records).
 - Make context **visible**: per-entry token costs, a fullness gauge, and top-consumer stats (large MCP/tool outputs are the usual offenders).
 
 Pi already provides the substrate: tree-structured sessions (`id`/`parentId`), `/tree` navigation with an optional summarize-on-leave flow, `/fork`, `/clone`, compaction entries, an extension API, and the pi-tui library. This project is the opinionated workflow + rich UI layer on top.
 
-**Evidence & positioning (use in user-facing docs).** Cite the documented failure modes this tool prevents: **"context rot"** (Chroma 2025, adopted by Anthropic's context-engineering guidance) — degradation with input length is real and non-uniform even on minimal tasks; **NoLiMa** (ICML 2025) — of 13 models claiming ≥128k windows, 11 fall below 50% of their short-context baseline by 32k tokens, with effective lengths ≤8k (best model) and ≤2k (most); **LongMemEval** — every model family tested scores higher on a focused prompt than on the same task buried in ~113k tokens, i.e. pruning is a *quality* feature, and it assumes a relevance oracle — which is exactly what the human confirm/edit gate provides. **The 5–15% band is this tool's own opinionated heuristic** — motivated by the above, prescribed by none of it; docs must present it as a design choice, not a measured threshold.
+**Evidence & positioning (use in user-facing docs).** Cite the documented failure modes this tool prevents: **"context rot"** (Chroma 2025, adopted by Anthropic's context-engineering guidance) — degradation with input length is real and non-uniform even on minimal tasks; **LOCA-bench** (arXiv 2602.07962, Feb 2026) — the agentic result, and the one the bands are drawn from: agent success against growing environment context puts Claude-4.5-Opus at 96% (8K), 84% (32K), 34% (128K), 14.7% (256K), with the between-model spread opening at 32K and a sharp drop at 64K–96K; **NoLiMa** (ICML 2025) — the earlier, stricter retrieval-only result: of 13 models claiming ≥128k windows, 11 fall below 50% of their short-context baseline by 32k tokens, with effective lengths ≤8k (best) and ≤2k (most). Retained for direction; superseded on figures, since 2026 agentic models clearly outrun it; **LongMemEval** — every model family tested scores higher on a focused prompt than on the same task buried in ~113k tokens, i.e. pruning is a *quality* feature, and it assumes a relevance oracle — which is exactly what the human confirm/edit gate provides. **The band ceilings are read directly off LOCA-bench**: 8k is where every model is still at its peak, 32k is where the spread opens and quality starts costing, and 64k is the last point before the sharp drop. What remains this tool's own opinion is *which failure counts as act-now* and how loudly to say so — not the numbers themselves. **These are a snapshot, not a constant:** they moved once already when the 2026 agentic data replaced the 2025 retrieval data, and should be re-derived whenever a newer long-context benchmark lands. Docs must still present the banding as a design choice; they must no longer describe it as a share of the window, which is what made the old 5–15% figure unfalsifiable in either direction.
 
 ---
 
@@ -102,7 +103,8 @@ Before branching, two giant MCP results (40k tokens) sit in the trunk. `/crop` o
 
 ### F5 Ambient UI
 - F5.1 Title bar (terminal title + header line): `project ⎇ branch`, color deterministically hashed from name.
-- F5.2 Context gauge in footer/prompt bar: current branch tokens vs. model window, gradient green→red; band markers at 5% and 15%; states: low (<5%), healthy (5–15%), filling (15–40%), red (>40%).
+- F5.2 Context gauge in footer/prompt bar: current branch tokens vs. model window, gradient green→red. Bands are **absolute token counts**, not shares: low (<8k), healthy (8k–32k), filling (32k–64k), red (≥64k). Band markers are drawn at those token counts converted to a share of the current window, so the marks land where the color changes — on a 200k window red starts at 32%, on a 1M window at 6.4%. The percent figure is printed as a label and decides nothing.
+- F5.5 Compaction guard: an independent warning when context enters pi's auto-compaction reserve (`contextWindow - reserveTokens`, default 16384). This is the *container* failure — pi replacing source material with a lossy summary — and is orthogonal to the quality band: a 32k-window session can hit it while still merely filling, and a 1M-window session can sit red for hours without approaching it. pi does not expose the live reserve to extensions, so the tool tracks pi's default.
 - F5.3 Gauge crossing into red triggers a one-time gentle notify suggesting `/branch`, `/merge`, or `/crop` (never auto-acts).
 - F5.4 If the user invokes pi's `/compact` on the trunk, show a warning (configurable off) explaining the philosophy; never block.
 
@@ -129,7 +131,7 @@ List decision records on the current trunk (also a panel view).
 ```
 
 ## 7. Success metrics
-- M1 Trunk tokens/turn within 5–15% band ≥80% of working time on one real project.
+- M1 Trunk tokens/turn within the healthy band (under 32k tokens) ≥80% of working time on one real project.
 - M2 Dangling branches trend to ~0 within a week.
 - M3 Panel actions replace manual `/tree` navigation for branch/merge work.
 

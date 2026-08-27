@@ -332,22 +332,35 @@ function ctxEntries(){
   return out;
 }
 function eff(e){ return e.cropped?24:e.tok; }
+// mirrors BAND_TOKENS / band() in packages/core/src/estimate.ts (LOCA-bench 2026)
+const BAND_TOKENS = {healthy:8000, filling:32000, red:64000};
+const COMPACTION_RESERVE = 16384;   // pi's default compaction.reserveTokens
 function totals(){
   const t = ctxEntries().reduce((s,e)=>s+eff(e),0);
   const pct = t/WINDOW*100;
-  const state = pct<5?'low':pct<15?'healthy':pct<40?'filling':'red';
-  return {t,pct,state};
+  // quality band: absolute tokens only — the window size does not enter into it
+  let state='low';
+  if(t>=BAND_TOKENS.healthy) state='healthy';
+  if(t>=BAND_TOKENS.filling) state='filling';
+  if(t>=BAND_TOKENS.red)     state='red';
+  // container guard: an independent signal, not a band
+  const compacting = t > WINDOW - COMPACTION_RESERVE;
+  return {t,pct,state,compacting};
+}
+// mirrors bandStartPercents(): band boundaries drawn as a share of THIS window
+function bandStarts(){
+  return [BAND_TOKENS.healthy,BAND_TOKENS.filling,BAND_TOKENS.red].map(v=>v/WINDOW*100);
 }
 const stateWord = {low:'low',healthy:'healthy',filling:'filling',red:'red'};
 const stateColor = {low:'#7ec96a',healthy:'#5af78e',filling:'#ff9e3b',red:'#f4647d'};
 
 function gauge(){
   const {t,pct,state}=totals();
-  const ticks=[5,15,40].map((p,i)=>'<i class="gtick'+(i<2?' major':'')+'" style="left:'+p+'%"></i>').join('');
+  const ticks=bandStarts().map((p,i)=>'<i class="gtick'+(i<2?' major':'')+'" style="left:'+p+'%"></i>').join('');
   return '<div class="gaugeline"><span class="glabel">CONTEXT</span>'+
     '<div class="gtrack"><div class="gfill"></div><div class="gmask" style="width:'+(100-Math.min(pct,100))+'%"></div>'+ticks+'</div>'+
     '<span class="glabel">~'+fmt(t)+' / '+fmt(WINDOW)+' · <b class="st-'+state+'">'+pct.toFixed(1)+'% '+stateWord[state]+'</b></span>'+
-    '<span class="glabel" style="margin-left:auto;color:var(--faint)">bands 5 · 15 · 40 (F5.2)</span></div>';
+    '<span class="glabel" style="margin-left:auto;color:var(--faint)">bands 8k · 32k · 64k tokens (F5.2)</span></div>';
 }
 function phead(crumb,spec){
   const br = S.branch ? '⎇ '+S.branch : 'trunk';
@@ -584,7 +597,7 @@ function renderForest(){
 
 /* ================= ambient (prompt bar) ================= */
 function renderAmbient(){
-  const {t,pct,state}=totals();
+  const {t,pct,state,compacting}=totals();
   const bcol=stateColor[state];
   const last = S.merged
     ? (S.mergeMode==='discard'
@@ -594,7 +607,8 @@ function renderAmbient(){
   const promptTxt = S.merged?'':'';
   let html='<div class="amb"><div class="scroll">'+
     '<div class="amsg"><span class="role">assistant:</span> '+last+'</div>'+
-    (pct>=40?'<div class="notify">⚠ context is '+pct.toFixed(0)+'% of the window — consider /branch, /merge or /crop (one-time notify, F5.3)</div>':'')+
+    (state==='red'?'<div class="notify">⚠ context entered the red band ('+fmt(t)+' tokens) — consider /branch, /merge or /crop (one-time notify, F5.3)</div>':'')+
+    (compacting?'<div class="notify">⚠ pi will auto-compact soon, replacing source material with a lossy summary — /merge or /crop keeps the source (F5.5)</div>':'')+
     '</div>'+
     '<div class="promptbox" style="border-color:'+bcol+'"><span style="color:var(--green)">'+promptTxt+'</span><span class="cursor"></span></div>'+
     '<div class="pbfoot">~/repos/'+PROJECT+' <span style="color:var(--txt)">●</span> '+PROJECT+(S.branch?' <span style="color:hsl('+hashHue(S.branch)+',60%,65%)">('+S.branch+')</span>':' <span style="color:var(--dim)">(trunk)</span>')+

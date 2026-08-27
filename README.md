@@ -38,9 +38,10 @@
 As the context window fills, retrieval degrades **measurably and non-uniformly** — attention is a fixed budget and every token competes for a slice:
 
 - **Context rot** (Chroma 2025, cited in Anthropic's context-engineering guidance) — answer quality drops with input length, even on trivial tasks.
-- **NoLiMa** (ICML 2025) — of 13 models claiming ≥128k windows, 11 fall below half their short-context score by 32k tokens.
+- **LOCA-bench** (arXiv 2602.07962, Feb 2026) — the agentic one, and the closest to what a pi session actually is. Agent success against growing environment context: Claude-4.5-Opus 96% at 8K, 84% at 32K, **34% at 128K**, 14.7% at 256K. The spread between models opens at 32K and the drop turns sharp between 64K and 96K.
+- **NoLiMa** (ICML 2025) — the earlier, stricter retrieval result: of 13 models claiming ≥128k windows, 11 fall below half their short-context score by 32k tokens.
 
-So pruning is a *quality* feature, not just a cost one. pi-context-tree treats the session like a **git repo**: a small trunk (`master`), side-work on branches, and `master` only ever receives clean, human-reviewed commits — never a lossy auto-summary. (Heuristic: keep the trunk in a [5–15% band](docs/pi-context-tree-spec.md#part-0--design-philosophy-context-for-the-building-agent).)
+So pruning is a *quality* feature, not just a cost one. pi-context-tree treats the session like a **git repo**: a small trunk (`master`), side-work on branches, and `master` only ever receives clean, human-reviewed commits — never a lossy auto-summary. (Heuristic: keep the trunk [under ~32k tokens](docs/pi-context-tree-spec.md#part-0--design-philosophy-context-for-the-building-agent) — measured absolutely, because a bigger window buys room, not quality.)
 
 ### Why not pi's built-in `/fork`, `/tree`, and `/compact`?
 
@@ -61,7 +62,7 @@ You can already *split* and *navigate* context natively — but the moves that k
 | **`/crop`** | Stub fat tool/MCP results, or drop a whole Q&A turn — **append-only**, always recoverable. `--top` crops the biggest result inline; or review in the panel; or headless `--auto --apply`. |
 | **`/undo`** | One-key revert of the last mutation — re-open a squashed/discarded branch, restore a crop, or undo a `/branch`. **Append-only**: nothing is deleted. |
 | **`/panel` (`Ctrl+Q`)** | Full-screen TUI: the tree with per-node token costs, branch status colors, top context consumers, all decision records (`/decisions --export` to markdown), and an entry inspector. |
-| **Ambient health gauge** | A green→red bar above your prompt with a **`▲` trend + jump attribution** — `ctx 38% ▲ +24% (chrome.snapshot)` tells you *what* to crop. Honest while estimating (band + `~est`, never a fake-precise %). Plus a hashed title and a 40% nudge. |
+| **Ambient health gauge** | A green→red bar above your prompt with a **`▲` trend + jump attribution** — `ctx 38% ▲ +24% (chrome.snapshot)` tells you *what* to crop. Honest while estimating (band + `~est`, never a fake-precise %). Plus a hashed title and a one-time red-band nudge. |
 | **`pitree`** | A standalone, **read-only** forest CLI across all your pi projects, with dangling-branch detection. |
 
 ## Demo
@@ -205,7 +206,7 @@ A full-screen overlay with five keyboard-driven views — **tree** (every entry 
 
 ### Ambient UI (outside the panel)
 
-A **context-health gauge bar pinned above the prompt** (`CONTEXT ▓▓░ … N% band`, green→red, band ticks at 5/15/40%). It carries a **`▲` trend** when context is filling fast and **attributes jumps** — `ctx 38% ▲ +24% (chrome.snapshot)` names *what* just bloated the window, right where you'll see it. While pi is still estimating (right after a session loads) it stays honest: the band word + a coarse `~est`, never a fake-precise percent. Plus a footer status `⎇ branch · ctx N% band`, a terminal title color-hashed per branch, a one-time nudge when context crosses 40%, and a philosophy warning on `/compact`.
+A **context-health gauge bar pinned above the prompt** (`CONTEXT ▓▓░ … N% band`, green→red, band ticks at 8k/32k/64k tokens, drawn as a share of your window). It carries a **`▲` trend** when context is filling fast and **attributes jumps** — `ctx 38% ▲ +24% (chrome.snapshot)` names *what* just bloated the window, right where you'll see it. While pi is still estimating (right after a session loads) it stays honest: the band word + a coarse `~est`, never a fake-precise percent. Plus a footer status `⎇ branch · ctx N% band`, a terminal title color-hashed per branch, a one-time nudge when context enters the red band (with hysteresis, so hovering the boundary does not re-fire it), a separate warning before pi's own auto-compaction is about to swap your source material for a summary, and a philosophy warning on `/compact`.
 
 ### `pitree` — the standalone forest CLI
 
@@ -276,4 +277,4 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for th
 
 ## Acknowledgements
 
-Built for [pi](https://github.com/earendil-works/pi) by earendil-works. The git-style context model and the "context is the new code" framing come from the *Context Engineering* deck that originated this project; the design philosophy is grounded in the context-rot and NoLiMa research cited above.
+Built for [pi](https://github.com/earendil-works/pi) by earendil-works. The git-style context model and the "context is the new code" framing come from the *Context Engineering* deck that originated this project; the design philosophy is grounded in the context-rot, LOCA-bench and NoLiMa research cited above.

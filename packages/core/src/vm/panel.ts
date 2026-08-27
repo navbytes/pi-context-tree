@@ -170,7 +170,7 @@ export class PanelVm {
 			tokens,
 			window,
 			pct,
-			band: pct === undefined ? undefined : band(pct),
+			band: band(tokens),
 			estimated,
 			readOnly: this.input.readOnly ?? false,
 		};
