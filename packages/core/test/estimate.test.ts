@@ -192,7 +192,7 @@ describe("contextTokens", () => {
 		b.user(filler(400));
 		const leaf = b.assistant(filler(400));
 		const tree = SessionTree.fromEntries(b.build().entries);
-		expect(contextTokens(contextSlice(tree, leaf))).toBe(100 + 100);
+		expect(contextTokens(tree, leaf)).toBe(100 + 100);
 	});
 
 	it("anchors on the last real usage and estimates only what follows", () => {
@@ -202,7 +202,7 @@ describe("contextTokens", () => {
 		const leaf = b.user(filler(800)); // 200 est — after the anchor, so added
 		const tree = SessionTree.fromEntries(b.build().entries);
 		// the anchor covers the system prompt + tool schemas, which no entry holds
-		expect(contextTokens(contextSlice(tree, leaf))).toBe(9_000 + 200);
+		expect(contextTokens(tree, leaf)).toBe(9_000 + 200);
 	});
 
 	it("ignores usage pi would not trust (errored/aborted turns, all-zero)", () => {
@@ -213,7 +213,7 @@ describe("contextTokens", () => {
 		const last = entries.at(-1) as { message: { stopReason: string } };
 		last.message.stopReason = "error";
 		const tree = SessionTree.fromEntries(entries);
-		expect(contextTokens(contextSlice(tree, leaf))).toBe(200);
+		expect(contextTokens(tree, leaf)).toBe(200);
 	});
 
 	it("keeps estimateContextTokens a pure sum — branch weight must exclude the baseline", () => {
@@ -222,5 +222,31 @@ describe("contextTokens", () => {
 		const leaf = b.assistant(filler(400), { usage: { totalTokens: 9_000 } });
 		const tree = SessionTree.fromEntries(b.build().entries);
 		expect(estimateContextTokens(contextSlice(tree, leaf))).toBe(200);
+	});
+});
+
+describe("contextTokens after compaction", () => {
+	// Compaction keeps a tail of older messages, so a kept assistant turn can
+	// carry usage describing the context compaction just discarded. Anchoring on
+	// it draws a fat red gauge over a context that was in fact just emptied.
+	it("refuses usage recorded before the latest compaction", () => {
+		const b = new SessionBuilder();
+		b.user(filler(400));
+		const keep = b.user(filler(400));
+		b.assistant(filler(400), { usage: { totalTokens: 150_000 } });
+		b.compaction("summary", keep, 150_000);
+		const leaf = b.user(filler(400));
+		const tree = SessionTree.fromEntries(b.build().entries);
+		expect(contextTokens(tree, leaf)).toBeLessThan(1_000);
+	});
+
+	it("anchors again once a turn answers after the compaction", () => {
+		const b = new SessionBuilder();
+		const keep = b.user(filler(400));
+		b.assistant(filler(400), { usage: { totalTokens: 150_000 } });
+		b.compaction("summary", keep, 150_000);
+		const leaf = b.assistant(filler(400), { usage: { totalTokens: 12_000 } });
+		const tree = SessionTree.fromEntries(b.build().entries);
+		expect(contextTokens(tree, leaf)).toBe(12_000);
 	});
 });

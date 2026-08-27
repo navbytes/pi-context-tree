@@ -132,7 +132,8 @@ export function refreshAmbient(pi: PiLike, ctx: CtxLike): void {
 
 	// One (tokens, pct, estimated) measurement — pi's real count if it has one, else chars/4.
 	// The slice feeds both the estimate and the consumer breakdown used for attribution.
-	const slice = state?.leafId ? contextSlice(state.tree, state.leafId) : undefined;
+	const leafId = state?.leafId ?? undefined;
+	const slice = state && leafId ? contextSlice(state.tree, leafId) : undefined;
 	const consumers = slice
 		? new Map(aggregateConsumers(slice).map((r) => [r.key, r.tokens] as [string, number]))
 		: undefined;
@@ -143,8 +144,8 @@ export function refreshAmbient(pi: PiLike, ctx: CtxLike): void {
 		gaugeTokens = usage.tokens;
 		pct = usage.percent;
 		estimated = false;
-	} else if (slice && window && window > 0) {
-		gaugeTokens = contextTokens(slice);
+	} else if (state && leafId && window && window > 0) {
+		gaugeTokens = contextTokens(state.tree, leafId);
 		pct = (gaugeTokens / window) * 100;
 	}
 
