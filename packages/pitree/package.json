@@ -18,7 +18,7 @@
 		"@earendil-works/pi-tui": "0.79.1",
 		"@pi-context-tree/core": "0.3.1",
 		"@pi-context-tree/tui": "0.3.1",
-		"chalk": "^5.3.0"
+		"chalk": "^6.0.0"
 	},
 	"engines": {
 		"node": ">=22.19.0"
