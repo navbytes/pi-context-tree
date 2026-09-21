@@ -24,6 +24,24 @@ jobs:
           node-version: "22"
           cache: npm
           registry-url: "https://registry.npmjs.org"
+      - name: Validate immutable release version
+        env:
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          if [ "$DRY_RUN" = true ]; then exit 0; fi
+          [[ "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          export RELEASE_VERSION="${GITHUB_REF_NAME#v}"
+          node - <<'NODE'
+          const fs = require('fs');
+          const version = process.env.RELEASE_VERSION;
+          const root = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const paths = fs.readdirSync('packages').filter(p => fs.existsSync(`packages/${p}/package.json`));
+          for (const path of paths) {
+            const pkg = JSON.parse(fs.readFileSync(`packages/${path}/package.json`, 'utf8'));
+            if (!pkg.private && pkg.version !== version) throw new Error(`Version mismatch: ${pkg.name}`);
+          }
+          if (root.version !== version) throw new Error('Root version mismatch');
+          NODE
       - run: npm ci
       - run: npm run check
       - run: npm run build

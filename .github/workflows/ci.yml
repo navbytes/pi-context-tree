@@ -27,6 +27,8 @@ jobs:
       - id: paths
         env:
           GH_TOKEN: ${{ github.token }}
+          EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+          EXPECTED_BASE_REF: ${{ github.event.pull_request.base.ref }}
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
@@ -36,15 +38,20 @@ jobs:
           fi
           gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" > pr.json
           gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" > files.json
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" > pr-after.json
           python3 - <<'PYTHON'
           import json, os, re
           pr = json.load(open('pr.json'))
+          after = json.load(open('pr-after.json'))
           files = [f for page in json.load(open('files.json')) for f in page]
           complete = 0 < len(files) == pr['changed_files'] < 3000
-          same_head = pr['head']['sha'] == os.environ['EXPECTED_HEAD']
+          stable = all(p['head']['sha'] == os.environ['EXPECTED_HEAD']
+                       and p['base']['sha'] == os.environ['EXPECTED_BASE']
+                       and p['base']['ref'] == os.environ['EXPECTED_BASE_REF']
+                       and p['changed_files'] == pr['changed_files'] for p in (pr, after))
           docs = re.compile(r'^(docs/|README[^/]*\.md$|CHANGELOG[^/]*\.md$|LICENSE[^/]*$|\.github/AUTOMATION\.md$)')
           paths = [path for f in files for path in (f['filename'], f.get('previous_filename', f['filename']))]
-          relevant = not (complete and same_head and all(docs.search(path) for path in paths))
+          relevant = not (complete and stable and all(docs.search(path) for path in paths))
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write(f'relevant={str(relevant).lower()}\n')
           PYTHON

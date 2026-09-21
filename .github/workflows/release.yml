@@ -36,6 +36,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v$(node -p "require('./package.json').version")"
+          if git show-ref --verify --quiet "refs/tags/$TAG"; then
+            test "$(git rev-parse "refs/tags/$TAG^{commit}")" = "$GITHUB_SHA" || { echo 'Existing tag targets a different commit' >&2; exit 1; }
+          fi
           echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
           if [ "$GITHUB_EVENT_NAME" = push ]; then
             previous=$(git show "$BEFORE:package.json" | jq -r .version)
