@@ -21,11 +21,12 @@ permissions:
 jobs:
   publish:
     name: publish to npm
+    if: inputs.dry-run || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: "22"
           cache: npm
@@ -38,6 +39,13 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          publish_package() {
+            workspace="$1"
+            version=$(npm pkg get version --workspace "$workspace" --json | jq -r 'to_entries[0].value')
+            name=$(npm pkg get name --workspace "$workspace" --json | jq -r 'to_entries[0].value')
+            if [ "$FLAG" != --dry-run ] && npm view "$name@$version" version >/dev/null 2>&1; then return; fi
+            npm publish --workspace "$workspace" --access public $FLAG
+          }
           FLAG=""
           if [ "${{ inputs.dry-run }}" = "true" ]; then
             FLAG="--dry-run"
@@ -45,9 +53,12 @@ jobs:
           fi
           for pkg in @pi-context-tree/core @pi-context-tree/tui @pi-context-tree/pitree @pi-context-tree/extension; do
             echo "::group::$pkg"
-            npm publish -w "$pkg" --access public $FLAG
-            echo "::endgroup::"
+            publish_package "$pkg"
           done
           echo "::group::pi-context-tree (root)"
-          npm publish --access public $FLAG
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          if [ "$FLAG" = --dry-run ] || ! npm view "$name@$version" version >/dev/null 2>&1; then
+            npm publish --access public $FLAG
+          fi
           echo "::endgroup::"

@@ -1,53 +1,51 @@
-# Release: pushing a vX.Y.Z tag runs the gate, then cuts a GitHub Release with
-# notes pulled from CHANGELOG.md. That tag is all a pi user needs:
-#   pi install git:github.com/navbytes/pi-context-tree@vX.Y.Z
-# (npm/gallery publishing is a separate, deliberate step — see the PR that added this.)
-#
-# Manual path (workflow_dispatch): cuts the release for the version already on
-# main — the bump + CHANGELOG land via PR first — creating the tag server-side
-# via `gh release create --target`. For maintainers working from environments
-# that can't push tags (web UI, mobile, sandboxed sessions).
 name: release
 
 on:
   push:
-    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+    branches: [main]
+    paths: ["package.json"]
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: write # create the tag (dispatch path) + the GitHub Release
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
     name: gate + GitHub Release
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: "22"
           cache: npm
       - run: npm ci
 
-      - name: resolve the release tag
-        id: tag
+      - name: Resolve merged release version
         env:
+          BEFORE: ${{ github.event.before }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          PKG="v$(node -p "require('./package.json').version")"
-          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
-            if [ "$PKG" != "${GITHUB_REF_NAME}" ]; then
-              echo "::error::tag ${GITHUB_REF_NAME} does not match package.json (${PKG}) — bump the version + CHANGELOG before tagging."
-              exit 1
+          TAG="v$(node -p "require('./package.json').version")"
+          echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            previous=$(git show "$BEFORE:package.json" | jq -r .version)
+            if [ "v$previous" = "$TAG" ]; then
+              echo 'RELEASE_EXISTS=true' >> "$GITHUB_ENV"
             fi
-            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-          else
-            if gh api "repos/${GITHUB_REPOSITORY}/git/refs/tags/${PKG}" >/dev/null 2>&1; then
-              echo "::error::${PKG} already exists — bump the version + CHANGELOG before dispatching a release."
-              exit 1
-            fi
-            echo "tag=${PKG}" >> "$GITHUB_OUTPUT"
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name' > released-tags.txt
+          if grep -Fx "$TAG" released-tags.txt; then
+            echo 'RELEASE_EXISTS=true' >> "$GITHUB_ENV"
           fi
 
       - run: npm run check
@@ -57,21 +55,21 @@ jobs:
 
       - name: build release notes from CHANGELOG
         env:
-          TAG: ${{ steps.tag.outputs.tag }}
+          TAG: ${{ env.RELEASE_TAG }}
         run: |
           node scripts/changelog-section.mjs "${TAG#v}" > RELEASE_NOTES.md
           echo "----- release notes -----"
           cat RELEASE_NOTES.md
 
-      - name: create GitHub Release
+      - name: Create GitHub release and dispatch npm publisher
+        if: env.RELEASE_EXISTS != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
-            gh release create "$TAG" --title "$TAG" --notes-file RELEASE_NOTES.md --latest --verify-tag
-          else
-            # --target creates the tag server-side; tags made by the workflow token
-            # don't re-trigger this workflow, so the push path won't double-fire
-            gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file RELEASE_NOTES.md --latest
-          fi
+          gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --title "$RELEASE_TAG" --notes-file RELEASE_NOTES.md --latest
+          gh workflow run publish-npm.yml --ref "$RELEASE_TAG" -f dry-run=false
+      - name: Retry npm publication for an existing release
+        if: env.RELEASE_EXISTS == 'true' && github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run publish-npm.yml --ref "$RELEASE_TAG" -f dry-run=false
