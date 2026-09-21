@@ -1,10 +1,3 @@
-# Publish the packages to npm — enables `pi install npm:pi-context-tree` and the
-# pi.dev gallery (which indexes the `pi-package` keyword). MANUAL trigger only:
-# npm publishes are immutable, so this never runs automatically. Defaults to a
-# dry-run; flip the input to actually publish.
-#
-# Requires an `NPM_TOKEN` repo secret (npm → Access Tokens → Automation) for a
-# real publish. The dry-run validates without a token.
 name: publish-npm
 
 on:
