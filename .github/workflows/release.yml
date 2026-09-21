@@ -28,35 +28,41 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-      - run: npm ci
-
       - name: Resolve merged release version
         env:
           BEFORE: ${{ github.event.before }}
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v$(node -p "require('./package.json').version")"
-          if git show-ref --verify --quiet "refs/tags/$TAG"; then
-            test "$(git rev-parse "refs/tags/$TAG^{commit}")" = "$GITHUB_SHA" || { echo 'Existing tag targets a different commit' >&2; exit 1; }
-          fi
           echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
           if [ "$GITHUB_EVENT_NAME" = push ]; then
             previous=$(git show "$BEFORE:package.json" | jq -r .version)
             if [ "v$previous" = "$TAG" ]; then
               echo 'RELEASE_EXISTS=true' >> "$GITHUB_ENV"
+              echo 'RELEASE_UNCHANGED=true' >> "$GITHUB_ENV"
+              exit 0
             fi
+          fi
+          if git show-ref --verify --quiet "refs/tags/$TAG"; then
+            test "$(git rev-parse "refs/tags/$TAG^{commit}")" = "$GITHUB_SHA" || { echo 'Existing tag targets a different commit' >&2; exit 1; }
           fi
           gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name' > released-tags.txt
           if grep -Fx "$TAG" released-tags.txt; then
             echo 'RELEASE_EXISTS=true' >> "$GITHUB_ENV"
           fi
 
+      - run: npm ci
+        if: env.RELEASE_UNCHANGED != 'true'
+
       - run: npm run check
+        if: env.RELEASE_UNCHANGED != 'true'
       # pi is not installed here, so the RPC goldens + PTY walk self-skip; units + build run.
       # The full integration suite already gated this commit on main's CI.
       - run: npm test
+        if: env.RELEASE_UNCHANGED != 'true'
 
       - name: build release notes from CHANGELOG
+        if: env.RELEASE_UNCHANGED != 'true'
         env:
           TAG: ${{ env.RELEASE_TAG }}
         run: |
