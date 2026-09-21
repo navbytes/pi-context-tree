@@ -4,18 +4,67 @@
 name: ci
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  changes:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      relevant: ${{ steps.paths.outputs.relevant }}
+    steps:
+      - id: paths
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+          EXPECTED_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            echo 'relevant=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" > pr.json
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" > files.json
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" > pr-after.json
+          python3 - <<'PYTHON'
+          import json, os, re
+          pr = json.load(open('pr.json'))
+          after = json.load(open('pr-after.json'))
+          files = [f for page in json.load(open('files.json')) for f in page]
+          complete = 0 < len(files) == pr['changed_files'] < 3000
+          stable = all(p['head']['sha'] == os.environ['EXPECTED_HEAD']
+                       and p['base']['sha'] == os.environ['EXPECTED_BASE']
+                       and p['base']['ref'] == os.environ['EXPECTED_BASE_REF']
+                       and p['changed_files'] == pr['changed_files'] for p in (pr, after))
+          docs = re.compile(r'^(docs/|README[^/]*\.md$|CHANGELOG[^/]*\.md$|LICENSE[^/]*$|\.github/AUTOMATION\.md$)')
+          paths = [path for f in files for path in (f['filename'], f.get('previous_filename', f['filename']))]
+          relevant = not (complete and stable and all(docs.search(path) for path in paths))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'relevant={str(relevant).lower()}\n')
+          PYTHON
+
   checks:
     name: lint + types + unit
+    if: ((github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false)) && needs.changes.outputs.relevant == 'true'
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: "22"
           cache: npm
@@ -26,11 +75,13 @@ jobs:
 
   integration-pinned:
     name: integration (pinned pi)
+    if: ((github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false)) && needs.changes.outputs.relevant == 'true'
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: "22"
           cache: npm
@@ -49,12 +100,14 @@ jobs:
 
   integration-latest:
     name: integration (pi@latest, non-blocking drift probe)
+    if: ((github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false) && github.event_name == 'workflow_dispatch') && needs.changes.outputs.relevant == 'true'
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: "22"
           cache: npm
@@ -69,3 +122,23 @@ jobs:
       # see the risk table in docs/pi-context-tree-spec.md §8 before re-pinning
       - name: rpc smoke + goldens against pi@latest
         run: npm test -w @pi-context-tree/extension
+
+  required:
+    name: Required CI
+    if: always() && (github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false)
+    needs: ["changes", "checks", "integration-pinned"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          jobs = json.loads(os.environ['NEEDS'])
+          assert jobs['changes']['result'] == 'success', 'Path detection failed'
+          relevant = jobs.pop('changes')['outputs']['relevant']
+          assert relevant in ('true', 'false')
+          expected = 'success' if relevant == 'true' else 'skipped'
+          assert all(job['result'] == expected for job in jobs.values()), jobs
+          PYTHON
